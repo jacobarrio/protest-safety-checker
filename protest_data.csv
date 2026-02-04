@@ -1,0 +1,12 @@
+city,state,date,type,description,source,severity
+Portland,OR,2026-01-15,POLICE_VIOLENCE,Border Patrol shot two protesters at demonstration,https://example.com,10
+Minneapolis,MN,2026-01-23,POLICE_VIOLENCE,"General strike - tear gas, pepper spray, flashbangs on protesters",https://example.com,9
+Minneapolis,MN,2026-01-23,ICE_OPERATION,6-year-old left wandering streets after father detained at laundromat,https://example.com,8
+Minneapolis,MN,2026-01-20,ICE_OPERATION,"Father detained while son dying from Pompe disease, child died Jan 23",https://example.com,10
+Minneapolis,MN,2026-01-01,CONSTITUTIONAL_VIOLATION,96+ court order violations by ICE since Jan 1,https://example.com,10
+Minneapolis,MN,2026-01-15,CONSTITUTIONAL_VIOLATION,US citizens and legal residents repeatedly detained (4th Amendment),https://example.com,9
+Minneapolis,MN,2026-01-10,CONSTITUTIONAL_VIOLATION,Asylum seekers detained in violation of due process (5th Amendment),https://example.com,8
+New York,NY,2026-01-22,PRESS_FREEDOM,Don Lemon arrested while covering protests (1st Amendment),https://example.com,9
+Atlanta,GA,2026-01-20,PRESS_FREEDOM,Georgia Fort (independent journalist) arrested at protest,https://example.com,8
+National,USA,2026-01-15,ICE_OPERATION,"2,450% surge in arrests of people with NO criminal record",https://example.com,10
+National,USA,2026-01-10,ICE_OPERATION,Detention up 75%: 40k → 66k (highest ever),https://example.com,9
