@@ -79,36 +79,41 @@ def scrape_oversight_dashboard_selenium():
             if len(cols) < 4:
                 continue
             
-            # Check second column for "Unknown" - indicates different row structure
-            second_col = cols[1].text.strip() if len(cols) > 1 else ''
+            # Check if first column has a link - indicates normal row
+            first_col_has_link = cols[0].find('a') is not None
             
-            if second_col == 'Unknown':
-                # Broken row structure: Category, Date(Unknown), Location, Title, URL
+            if not first_col_has_link:
+                # Bad row: Category, Unknown, Location, Title
+                # Only 4 columns total
                 category = cols[0].text.strip()
-                date = 'Unknown'
-                state = cols[2].text.strip() if len(cols) > 2 else 'Unknown'
+                date = cols[1].text.strip()  # Usually "Unknown"
+                state = cols[2].text.strip()
                 
-                if len(cols) > 3:
-                    title_td = cols[3]
-                    title_link = title_td.find('a')
-                    if title_link:
-                        title = title_link.text.strip()
-                        source_url = title_link.get('href', '')
-                    else:
-                        title = title_td.text.strip()
-                        source_url = ''
+                title_td = cols[3]
+                title_link = title_td.find('a')
+                if title_link:
+                    title = title_link.text.strip()
+                    source_url = title_link.get('href', '')
                 else:
-                    title = 'Unknown'
+                    title = title_td.text.strip()
                     source_url = ''
             else:
-                # Normal row: Title, Title(dup), Date, Category, Location
-                if len(cols) < 4:
-                    continue
-                    
+                # Good row: Has link in col[0]
                 title_td = cols[0]
-                date = cols[2].text.strip()
-                category = cols[3].text.strip()
-                state = cols[4].text.strip() if len(cols) > 4 else 'Unknown'
+                
+                # Check if 4 or 5 columns
+                if len(cols) == 5:
+                    # Title, Title(dup), Date, Category, Location
+                    date = cols[2].text.strip()
+                    category = cols[3].text.strip()
+                    state = cols[4].text.strip()
+                elif len(cols) == 4:
+                    # Title, Date, Category, Location (no dup)
+                    date = cols[1].text.strip()
+                    category = cols[2].text.strip()
+                    state = cols[3].text.strip()
+                else:
+                    continue
                 
                 title_link = title_td.find('a')
                 if title_link:
