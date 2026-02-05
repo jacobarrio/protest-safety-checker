@@ -20,8 +20,16 @@ def calculate_risk(city):
         print(f"\n🚨 RISK LEVEL: UNKNOWN (no data)")
         return
     
-    # Convert dates
-    city_data['date'] = pd.to_datetime(city_data['date'])
+    # Convert dates (skip Unknown dates)
+    city_data = city_data[city_data['date'] != 'Unknown'].copy()
+    
+    if len(city_data) == 0:
+        print(f"⚠️  No dated incidents found for {city}")
+        print(f"\n🚨 RISK LEVEL: UNKNOWN (no date data)")
+        return
+    
+    city_data['date'] = pd.to_datetime(city_data['date'], errors='coerce')
+    city_data = city_data.dropna(subset=['date'])
     
     # Recent incidents (last 30 days)
     cutoff_30 = datetime.now() - timedelta(days=30)

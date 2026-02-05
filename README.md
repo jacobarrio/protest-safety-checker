@@ -55,13 +55,15 @@ pip install pandas
 python3 risk_checker.py
 ```
 
-Enter a city name when prompted. Currently supported cities:
-- Minneapolis
-- Portland
-- New York City
-- Atlanta
-- Seattle
-- Los Angeles
+Enter a city name when prompted. **418 verified incidents** across **180+ cities** in 39 states (as of Feb 2026).
+
+Top cities by incident count:
+- Chicago (38+ incidents)
+- Minneapolis (37+ incidents)  
+- Portland (21+ incidents)
+- Los Angeles (23+ incidents)
+- New York City (13+ incidents)
+- Many more...
 
 ## How Risk Scores Work
 
@@ -82,10 +84,13 @@ Where:
 
 ## Data Sources
 
-v0.1 uses manually verified incidents from:
-- News reports (verified independently)
-- Legal filings (court documents, ACLU reports)
-- Eyewitness accounts (cross-referenced)
+**Primary source:** [House Oversight Committee Democrats Immigration Enforcement Dashboard](https://oversightdemocrats.house.gov/immigration-dashboard)  
+All incidents verified by reputable news outlets or referenced in litigation.
+
+Additional sources:
+- Court documents and legal filings
+- Verified news reports (cross-referenced)
+- ACLU reports
 
 **Included incident types:**
 - Police violence at protests (tear gas, rubber bullets, arrests)
@@ -95,11 +100,12 @@ v0.1 uses manually verified incidents from:
 
 ## Limitations
 
-**v0.1 is a minimal viable product:**
-- ✅ Works with verified data
+**v0.1 status:**
+- ✅ Works with verified official data (House Oversight Committee)
+- ✅ 418 verified incidents across 180+ cities
 - ✅ Provides basic risk assessment
-- ❌ Limited to 11 cities with <50 incidents
-- ❌ No real-time data (incidents manually added)
+- ⏳ Data current through Feb 2026 (updated periodically)
+- ❌ No real-time tracking (incidents added after verification)
 - ❌ No predictive modeling
 
 **What this tool does NOT do:**
@@ -110,10 +116,11 @@ v0.1 uses manually verified incidents from:
 
 ## Roadmap
 
-**v0.2 (next):**
-- Expand to 50+ incidents across more cities
-- Add automated data collection
-- Include source links for verification
+**v0.2 (in progress):**
+- ✅ Automated scraping of House Oversight Dashboard
+- ✅ Expanded to 400+ incidents
+- ⏳ Add more data sources (ACLU tracker, local reports)
+- ⏳ Improve city matching (handle variations)
 
 **v0.3+:**
 - Real-time incident tracking
