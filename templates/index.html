@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protest Safety Checker - ICE Activity Risk Assessment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 py-12">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">🛡️ Protest Safety Checker</h1>
+            <p class="text-xl text-gray-600">ICE Activity Risk Assessment</p>
+            <p class="text-sm text-gray-500 mt-2">Data from House Oversight Democrats Immigration Dashboard (Nov 2025 - Jan 2026)</p>
+        </div>
+
+        <!-- Search Box -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <label class="block text-lg font-semibold text-gray-700 mb-4">Enter Your City:</label>
+            <div class="flex gap-4">
+                <input 
+                    type="text" 
+                    id="cityInput"
+                    placeholder="e.g., Portland, Chicago, Minneapolis"
+                    class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                />
+                <button 
+                    onclick="checkCity()"
+                    class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                    Check Risk
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden text-center py-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="text-gray-600 mt-4">Analyzing data...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="hidden">
+            <!-- Risk Level Card -->
+            <div id="riskCard" class="rounded-lg shadow-lg p-8 mb-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-2" id="riskTitle"></h2>
+                        <p class="text-lg" id="riskScore"></p>
+                    </div>
+                    <div class="text-6xl" id="riskEmoji"></div>
+                </div>
+            </div>
+
+            <!-- Statistics Grid -->
+            <div class="grid md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <p class="text-sm text-gray-600 mb-1">Total Incidents</p>
+                    <p class="text-3xl font-bold text-gray-900" id="statTotal">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <p class="text-sm text-gray-600 mb-1">Use of Force</p>
+                    <p class="text-3xl font-bold text-red-600" id="statForce">0</p>
+                    <p class="text-xs text-gray-500" id="statForcePct"></p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <p class="text-sm text-gray-600 mb-1">U.S. Citizens</p>
+                    <p class="text-3xl font-bold text-orange-600" id="statCitizen">0</p>
+                    <p class="text-xs text-gray-500" id="statCitizenPct"></p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <p class="text-sm text-gray-600 mb-1">Sensitive Locations</p>
+                    <p class="text-3xl font-bold text-purple-600" id="statSensitive">0</p>
+                    <p class="text-xs text-gray-500" id="statSensitivePct"></p>
+                </div>
+            </div>
+
+            <!-- Recent Incidents -->
+            <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">📰 Recent Incidents</h3>
+                <div id="incidentsList" class="space-y-4"></div>
+            </div>
+
+            <!-- Safety Recommendations -->
+            <div id="recommendations" class="rounded-lg shadow-lg p-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">💡 Safety Recommendations</h3>
+                <div id="recommendationsList"></div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p class="text-red-800 font-semibold" id="errorMessage"></p>
+            <p class="text-red-600 text-sm mt-2">Try: Chicago, Minneapolis, Portland, Los Angeles, Phoenix</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-12 text-center text-sm text-gray-500">
+            <p>Built to protect organizers and communities.</p>
+            <p class="mt-2">Data: <a href="https://oversightdemocrats.house.gov/immigration-enforcement-dashboard" target="_blank" class="text-blue-600 hover:underline">House Oversight Democrats Immigration Dashboard</a></p>
+        </div>
+    </div>
+
+    <script>
+        function checkCity() {
+            const city = document.getElementById('cityInput').value.trim();
+            if (!city) {
+                alert('Please enter a city name');
+                return;
+            }
+
+            // Show loading, hide others
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+
+            // Call API
+            fetch('/api/check', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({city: city})
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+
+                if (data.error || !data.total_incidents || data.total_incidents === 0) {
+                    // No data found
+                    document.getElementById('errorMessage').textContent = data.error || 'No data found for this city';
+                    document.getElementById('error').classList.remove('hidden');
+                    return;
+                }
+
+                // Show results
+                displayResults(data);
+            })
+            .catch(err => {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('errorMessage').textContent = 'Error loading data. Please try again.';
+                document.getElementById('error').classList.remove('hidden');
+            });
+        }
+
+        function displayResults(data) {
+            // Risk card styling
+            const riskCard = document.getElementById('riskCard');
+            const colors = {
+                'High': 'bg-red-100 border-2 border-red-500',
+                'Medium': 'bg-yellow-100 border-2 border-yellow-500',
+                'Low': 'bg-green-100 border-2 border-green-500'
+            };
+            riskCard.className = `rounded-lg shadow-lg p-8 mb-6 ${colors[data.risk_level]}`;
+
+            // Risk level
+            document.getElementById('riskEmoji').textContent = {
+                'High': '🔴', 'Medium': '🟡', 'Low': '🟢'
+            }[data.risk_level];
+            document.getElementById('riskTitle').textContent = `Risk Level: ${data.risk_level}`;
+            document.getElementById('riskScore').textContent = `Risk Score: ${data.risk_score}/100`;
+
+            // Statistics
+            document.getElementById('statTotal').textContent = data.total_incidents;
+            document.getElementById('statForce').textContent = data.use_of_force;
+            document.getElementById('statForcePct').textContent = `${data.use_of_force_pct}%`;
+            document.getElementById('statCitizen').textContent = data.us_citizens;
+            document.getElementById('statCitizenPct').textContent = `${data.us_citizens_pct}%`;
+            document.getElementById('statSensitive').textContent = data.sensitive_locations;
+            document.getElementById('statSensitivePct').textContent = `${data.sensitive_locations_pct}%`;
+
+            // Recent incidents
+            const incidentsList = document.getElementById('incidentsList');
+            incidentsList.innerHTML = data.recent_incidents.slice(0, 5).map(inc => {
+                const category = inc.category ? inc.category : 'Category unknown';
+                return `
+                    <div class="border-l-4 border-blue-500 pl-4 py-2">
+                        <p class="text-sm text-gray-600">${inc.date || 'Unknown date'}</p>
+                        <p class="text-gray-900">${inc.title || 'No title available'}</p>
+                        <p class="text-xs text-gray-500 mt-1">${category}</p>
+                    </div>
+                `;
+            }).join('');
+
+            // Recommendations
+            const recDiv = document.getElementById('recommendations');
+            const recList = document.getElementById('recommendationsList');
+            
+            if (data.risk_level === 'High') {
+                recDiv.className = 'bg-red-50 border-2 border-red-500 rounded-lg shadow-lg p-8';
+                recList.innerHTML = `
+                    <ul class="space-y-2 text-gray-800">
+                        <li>⚠️ <strong>High risk of ICE encounters</strong></li>
+                        <li>• Know your rights - you can remain silent</li>
+                        <li>• Don't open doors without warrant</li>
+                        <li>• Document any encounters (video/photos)</li>
+                        <li>• Have emergency contacts ready</li>
+                    </ul>
+                `;
+            } else if (data.risk_level === 'Medium') {
+                recDiv.className = 'bg-yellow-50 border-2 border-yellow-500 rounded-lg shadow-lg p-8';
+                recList.innerHTML = `
+                    <ul class="space-y-2 text-gray-800">
+                        <li>⚠️ <strong>Moderate risk - stay alert</strong></li>
+                        <li>• Be aware of your surroundings</li>
+                        <li>• Know your rights</li>
+                        <li>• Have emergency plan in place</li>
+                    </ul>
+                `;
+            } else {
+                recDiv.className = 'bg-green-50 border-2 border-green-500 rounded-lg shadow-lg p-8';
+                recList.innerHTML = `
+                    <ul class="space-y-2 text-gray-800">
+                        <li>✓ <strong>Lower risk, but stay informed</strong></li>
+                        <li>• Keep monitoring local reports</li>
+                        <li>• Know your rights just in case</li>
+                    </ul>
+                `;
+            }
+
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('cityInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkCity();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Risk Assessment - Protest Safety Checker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 2em; margin-bottom: 10px; }
+        .subtitle { color: #666; font-size: 0.95em; }
+        .source { color: #999; font-size: 0.85em; margin-top: 5px; }
+        
+        .search-again {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .search-form { display: flex; gap: 10px; }
+        .search-form input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .search-form button {
+            padding: 12px 24px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .search-form button:hover { background: #1d4ed8; }
+        
+        .matched-cities {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #1e40af;
+        }
+        
+        .risk-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            {% if data.risk_level == 'High' %}
+                background: #fee;
+                border: 2px solid #fcc;
+            {% elif data.risk_level == 'Medium' %}
+                background: #fffbeb;
+                border: 2px solid #fed;
+            {% else %}
+                background: #f0fdf4;
+                border: 2px solid #dcfce7;
+            {% endif %}
+        }
+        
+        .risk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .risk-level {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .risk-indicator {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            {% if data.risk_level == 'High' %}
+                background: #dc2626;
+            {% elif data.risk_level == 'Medium' %}
+                background: #f59e0b;
+            {% else %}
+                background: #16a34a;
+            {% endif %}
+        }
+        .risk-score {
+            font-size: 1.2em;
+            color: #666;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        .stat-value.force { color: #dc2626; }
+        .stat-value.citizens { color: #ea580c; }
+        .stat-value.sensitive { color: #7c3aed; }
+        .stat-pct {
+            color: #666;
+            font-size: 0.85em;
+        }
+        
+        .recommendations {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .recommendations h2 { margin-bottom: 15px; }
+        .recommendation-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2563eb;
+            background: #f8fafc;
+        }
+        
+        .incidents-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .incidents-section h2 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .incident-card {
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f8fafc;
+            border-radius: 4px;
+        }
+        .incident-date {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .incident-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .incident-tags {
+            font-size: 0.85em;
+            color: #dc2626;
+            margin-top: 5px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .footer a { color: #2563eb; text-decoration: none; }
+        
+        @media (max-width: 640px) {
+            .risk-header { flex-direction: column; gap: 15px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .search-form { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Protest Safety Checker</h1>
+            <div class="subtitle">ICE Activity Risk Assessment</div>
+            <div class="source">Data from House Oversight Democrats Immigration Dashboard (Nov 2025 - Jan 2026)</div>
+        </div>
+        
+        <div class="search-again">
+            <form class="search-form" method="POST" action="/check">
+                <input type="text" name="city" placeholder="Enter city name..." value="{{ data.search_term }}">
+                <button type="submit">Check Risk</button>
+            </form>
+            {% if data.matched_cities|length > 1 %}
+            <div class="matched-cities">
+                ℹ️ Showing combined data for: {{ data.matched_cities|join(', ') }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="risk-card">
+            <div class="risk-header">
+                <div>
+                    <div class="risk-level">Risk Level: {{ data.risk_level }}</div>
+                    <div class="risk-score">Risk Score: {{ data.risk_score }}/100</div>
+                </div>
+                <div class="risk-indicator"></div>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Incidents</div>
+                <div class="stat-value">{{ data.total_incidents }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Use of Force</div>
+                <div class="stat-value force">{{ data.use_of_force }}</div>
+                <div class="stat-pct">{{ data.use_of_force_pct }}%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">U.S. Citizens</div>
+                <div class="stat-value citizens">{{ data.us_citizens }}</div>
+                <div class="stat-pct">{{ data.us_citizens_pct }}%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Sensitive Locations</div>
+                <div class="stat-value sensitive">{{ data.sensitive_locations }}</div>
+                <div class="stat-pct">{{ data.sensitive_locations_pct }}%</div>
+            </div>
+        </div>
+        
+        <div class="recommendations">
+            <h2>Safety Recommendations</h2>
+            {% if data.risk_level == 'High' %}
+            <div class="recommendation-item">
+                <strong>⚠️ High Alert:</strong> Consider postponing non-urgent activities. If proceeding, ensure multiple legal observers are present.
+            </div>
+            <div class="recommendation-item">
+                <strong>📱 Communication:</strong> Use Signal for coordination. Designate a contact person outside the area.
+            </div>
+            <div class="recommendation-item">
+                <strong>🆔 Documentation:</strong> Carry ID but know your rights. Do not consent to searches without a warrant.
+            </div>
+            {% elif data.risk_level == 'Medium' %}
+            <div class="recommendation-item">
+                <strong>⚡ Moderate Risk:</strong> Proceed with caution. Have a safety plan and know your rights.
+            </div>
+            <div class="recommendation-item">
+                <strong>👥 Buddy System:</strong> Travel in groups when possible. Keep emergency contacts accessible.
+            </div>
+            {% else %}
+            <div class="recommendation-item">
+                <strong>✓ Lower Risk:</strong> Standard precautions apply. Stay aware of your surroundings.
+            </div>
+            {% endif %}
+            <div class="recommendation-item">
+                <strong>📞 Know Your Rights:</strong> You have the right to remain silent. Contact ACLU hotline: 1-877-218-2260
+            </div>
+        </div>
+        
+        <div class="incidents-section">
+            <h2>📋 Recent Incidents</h2>
+            {% for incident in data.recent_incidents %}
+            <div class="incident-card">
+                <div class="incident-date">{{ incident['date'] }}</div>
+                <div class="incident-title">{{ incident['title'] }}</div>
+                {% if incident['category'] %}
+                <div class="incident-tags">{{ incident['category'] }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="footer">
+            Built to protect organizers and communities.<br>
+            Data: <a href="https://oversightdemocrats.house.gov/immigration-dashboard" target="_blank">House Oversight Democrats Immigration Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>
