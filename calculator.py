@@ -1,5 +1,7 @@
 import pandas as pd
 import re
+from datetime import datetime
+import os
 
 def normalize_city_input(city_input):
     """
@@ -102,6 +104,49 @@ def calculate_risk_score(city_data):
         'recent_incidents': incidents_list
     }
 
+def get_last_updated(csv_path='protest_data_oversight.csv'):
+    """Get last modified time of CSV file"""
+    try:
+        mtime = os.path.getmtime(csv_path)
+        dt = datetime.fromtimestamp(mtime)
+        hours_ago = int((datetime.now() - dt).total_seconds() / 3600)
+        return {'hours_ago': hours_ago, 'timestamp': dt.isoformat()}
+    except:
+        return {'hours_ago': None, 'timestamp': None}
+
+def get_all_cities(csv_path='protest_data_oversight.csv'):
+    """Get sorted list of all cities for autocomplete"""
+    try:
+        df = pd.read_csv(csv_path)
+        cities = sorted(df['location'].str.strip().unique())
+        return cities
+    except:
+        return []
+
+def get_timeline_data(city_input=None, csv_path='protest_data_oversight.csv'):
+    """Get incident counts by date for timeline chart"""
+    try:
+        df = pd.read_csv(csv_path)
+        
+        # Filter by city if provided
+        if city_input:
+            city_data = find_matching_cities(city_input, df)
+            if city_data.empty:
+                return []
+            df = city_data
+        
+        # Parse dates and group by date
+        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        df = df.dropna(subset=['date'])
+        
+        # Group by date and count incidents
+        timeline = df.groupby(df['date'].dt.date).size().reset_index(name='count')
+        timeline['date'] = timeline['date'].astype(str)
+        
+        return timeline.to_dict('records')
+    except:
+        return []
+
 def get_risk_for_city(city_input, csv_path='protest_data_oversight.csv'):
     """
     Main function: load data, find city, calculate risk
@@ -127,5 +172,7 @@ def get_risk_for_city(city_input, csv_path='protest_data_oversight.csv'):
     risk_data = calculate_risk_score(city_data)
     risk_data['matched_cities'] = list(matched_cities)
     risk_data['search_term'] = city_input
+    risk_data['timeline'] = get_timeline_data(city_input, csv_path)
+    risk_data['last_updated'] = get_last_updated(csv_path)
     
     return risk_data

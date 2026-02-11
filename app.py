@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from calculator import get_risk_for_city
+from calculator import get_risk_for_city, get_all_cities, get_last_updated, get_timeline_data
 import pandas as pd
 
 app = Flask(__name__)
@@ -52,6 +52,24 @@ def list_cities():
         return render_template('cities.html', cities=cities)
     except:
         return "Error loading cities", 500
+
+@app.route('/api/cities')
+def api_cities():
+    """Autocomplete endpoint - returns all cities as JSON"""
+    cities = get_all_cities()
+    return jsonify(cities)
+
+@app.route('/api/last_updated')
+def api_last_updated():
+    """Get last data update time"""
+    return jsonify(get_last_updated())
+
+@app.route('/api/timeline')
+def api_timeline():
+    """Get timeline data (all incidents or filtered by city)"""
+    city = request.args.get('city', None)
+    timeline = get_timeline_data(city)
+    return jsonify(timeline)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
