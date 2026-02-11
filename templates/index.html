@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICE INCIDENT TRACKER</title>
+    <title>ICE Incident Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,97 +16,104 @@
         }
         
         body {
-            font-family: 'Arial', 'Helvetica Neue', sans-serif;
-            background: #1a1a1a;
-            color: #f0f0f0;
-            line-height: 1.4;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #f5f5f5;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 24px;
         }
         
         header {
-            border-bottom: 8px solid #fff;
-            padding-bottom: 30px;
-            margin-bottom: 40px;
+            border-bottom: 3px solid #fff;
+            padding-bottom: 24px;
+            margin-bottom: 48px;
         }
         
         h1 {
-            font-size: 56px;
+            font-size: 42px;
             font-weight: 900;
-            letter-spacing: -2px;
+            letter-spacing: -1.5px;
             text-transform: uppercase;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            line-height: 1;
         }
         
         .subtitle {
-            font-size: 14px;
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #888;
+            letter-spacing: 1.5px;
+            color: #666;
+            font-weight: 600;
         }
         
         .updated {
-            font-size: 12px;
-            color: #666;
-            margin-top: 15px;
+            font-size: 10px;
+            color: #555;
+            margin-top: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-weight: 500;
         }
         
         .search-box {
-            background: #2a2a2a;
-            border: 4px solid #fff;
-            padding: 30px;
-            margin-bottom: 40px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            padding: 32px;
+            margin-bottom: 48px;
             position: relative;
         }
         
         .search-box label {
             display: block;
-            font-size: 12px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
             font-weight: 700;
+            color: #888;
         }
         
         #cityInput {
             width: 100%;
-            font-size: 32px;
-            padding: 15px;
-            border: none;
-            background: #1a1a1a;
+            font-size: 24px;
+            padding: 16px;
+            border: 2px solid #333;
+            background: #0a0a0a;
             color: #fff;
-            font-weight: 700;
-            text-transform: uppercase;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
         }
         
         #cityInput:focus {
-            outline: 3px solid #fff;
+            outline: none;
+            border-color: #fff;
         }
         
         #autocomplete {
             position: absolute;
-            left: 30px;
-            right: 30px;
+            left: 32px;
+            right: 32px;
             background: #000;
-            border: 3px solid #fff;
-            max-height: 300px;
+            border: 2px solid #fff;
+            max-height: 280px;
             overflow-y: auto;
             z-index: 1000;
             display: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.8);
         }
         
         .autocomplete-item {
-            padding: 12px 15px;
+            padding: 12px 16px;
             cursor: pointer;
-            border-bottom: 1px solid #333;
-            font-size: 14px;
-            text-transform: uppercase;
+            border-bottom: 1px solid #222;
+            font-size: 13px;
+            font-weight: 500;
         }
         
         .autocomplete-item:hover {
@@ -115,155 +125,177 @@
             background: #fff;
             color: #000;
             border: none;
-            padding: 20px 40px;
-            font-size: 16px;
-            font-weight: 900;
+            padding: 16px 32px;
+            font-size: 13px;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
             cursor: pointer;
             width: 100%;
-            margin-top: 20px;
+            margin-top: 16px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.15s ease;
         }
         
         button:hover {
             background: #000;
             color: #fff;
-            outline: 3px solid #fff;
+            box-shadow: inset 0 0 0 2px #fff;
         }
         
         .risk-card {
-            border: 8px solid;
-            padding: 40px;
-            margin-bottom: 40px;
+            border: 4px solid;
+            padding: 32px;
+            margin-bottom: 32px;
         }
         
         .risk-card.high {
-            border-color: #ff0000;
-            background: #1a0000;
+            border-color: #ef4444;
+            background: linear-gradient(135deg, #1a0000 0%, #0a0000 100%);
         }
         
         .risk-card.medium {
-            border-color: #ffff00;
-            background: #1a1a00;
+            border-color: #eab308;
+            background: linear-gradient(135deg, #1a1a00 0%, #0a0a00 100%);
         }
         
         .risk-card.low {
-            border-color: #00ff00;
-            background: #001a00;
+            border-color: #22c55e;
+            background: linear-gradient(135deg, #001a00 0%, #000a00 100%);
         }
         
         .risk-level {
-            font-size: 72px;
+            font-size: 48px;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: -3px;
-            margin-bottom: 10px;
+            letter-spacing: -2px;
+            margin-bottom: 6px;
+            line-height: 1;
         }
         
         .risk-score {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: 600;
+            color: #999;
         }
         
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
         }
         
         .stat-box {
-            background: #2a2a2a;
-            border: 4px solid #fff;
-            padding: 30px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            padding: 24px;
+            transition: border-color 0.2s ease;
+        }
+        
+        .stat-box:hover {
+            border-color: #555;
         }
         
         .stat-label {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
             font-weight: 700;
-            color: #888;
+            color: #666;
         }
         
         .stat-value {
-            font-size: 48px;
+            font-size: 40px;
             font-weight: 900;
             line-height: 1;
+            margin-bottom: 4px;
         }
         
         .stat-pct {
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
+            font-size: 12px;
+            color: #555;
+            font-weight: 600;
         }
         
         .chart-box {
-            background: #2a2a2a;
-            border: 4px solid #fff;
-            padding: 30px;
-            margin-bottom: 40px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            padding: 32px;
+            margin-bottom: 32px;
         }
         
         .chart-title {
-            font-size: 16px;
+            font-size: 12px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 900;
-            margin-bottom: 20px;
+            letter-spacing: 1.5px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            color: #fff;
         }
         
         .incidents {
-            background: #2a2a2a;
-            border: 4px solid #fff;
-            padding: 30px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            padding: 32px;
         }
         
         .incident-item {
-            border-left: 6px solid #fff;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-left: 3px solid #fff;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            background: #0a0a0a;
+            transition: background 0.15s ease;
+        }
+        
+        .incident-item:hover {
             background: #1a1a1a;
         }
         
         .incident-date {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-            color: #666;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: 600;
         }
         
         .incident-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.4;
         }
         
         .incident-category {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            color: #ff0000;
+            color: #ef4444;
             letter-spacing: 1px;
+            font-weight: 700;
         }
         
         footer {
-            margin-top: 60px;
-            padding-top: 40px;
-            border-top: 4px solid #333;
-            font-size: 12px;
-            color: #666;
+            margin-top: 64px;
+            padding-top: 32px;
+            border-top: 2px solid #222;
+            font-size: 10px;
+            color: #555;
             text-transform: uppercase;
             letter-spacing: 1px;
+            line-height: 1.6;
         }
         
         .loading {
             text-align: center;
-            padding: 60px;
-            font-size: 24px;
+            padding: 80px 20px;
+            font-size: 18px;
             text-transform: uppercase;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
+            font-weight: 700;
+            color: #666;
             animation: pulse 1.5s infinite;
         }
         
@@ -274,41 +306,64 @@
         
         .error {
             background: #1a0000;
-            border: 4px solid #ff0000;
+            border: 2px solid #ef4444;
             padding: 40px;
             text-align: center;
-            font-size: 24px;
+            font-size: 16px;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .hidden {
             display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 16px;
+            }
+            
+            h1 {
+                font-size: 32px;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            #cityInput {
+                font-size: 20px;
+            }
+            
+            .risk-level {
+                font-size: 36px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>ICE INCIDENT TRACKER</h1>
+            <h1>ICE Incident Tracker</h1>
             <div class="subtitle">Congressional Oversight Data</div>
             <div class="updated" id="lastUpdated">Loading...</div>
         </header>
         
         <div class="search-box">
-            <label for="cityInput">ENTER LOCATION</label>
+            <label for="cityInput">Enter Location</label>
             <input 
                 type="text" 
                 id="cityInput" 
-                placeholder="CITY NAME"
+                placeholder="City name"
                 autocomplete="off"
             />
             <div id="autocomplete"></div>
-            <button onclick="checkRisk()">ANALYZE RISK</button>
+            <button onclick="checkRisk()">Analyze Risk</button>
         </div>
         
         <div id="loading" class="loading hidden">
-            LOADING DATA...
+            Loading data...
         </div>
         
         <div id="error" class="error hidden"></div>
@@ -321,41 +376,41 @@
             
             <div class="stats">
                 <div class="stat-box">
-                    <div class="stat-label">TOTAL INCIDENTS</div>
+                    <div class="stat-label">Total Incidents</div>
                     <div class="stat-value" id="statTotal">0</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">USE OF FORCE</div>
-                    <div class="stat-value" style="color: #ff0000" id="statForce">0</div>
+                    <div class="stat-label">Use of Force</div>
+                    <div class="stat-value" style="color: #ef4444" id="statForce">0</div>
                     <div class="stat-pct" id="statForcePct"></div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">U.S. CITIZENS</div>
-                    <div class="stat-value" style="color: #ffff00" id="statCitizen">0</div>
+                    <div class="stat-label">U.S. Citizens</div>
+                    <div class="stat-value" style="color: #eab308" id="statCitizen">0</div>
                     <div class="stat-pct" id="statCitizenPct"></div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">SENSITIVE LOCATIONS</div>
-                    <div class="stat-value" style="color: #ff00ff" id="statSensitive">0</div>
+                    <div class="stat-label">Sensitive Locations</div>
+                    <div class="stat-value" style="color: #a855f7" id="statSensitive">0</div>
                     <div class="stat-pct" id="statSensitivePct"></div>
                 </div>
             </div>
             
             <div class="chart-box">
-                <div class="chart-title">INCIDENTS OVER TIME</div>
+                <div class="chart-title">Incidents Over Time</div>
                 <canvas id="timelineChart"></canvas>
             </div>
             
             <div class="incidents">
-                <div class="chart-title">RECENT INCIDENTS</div>
+                <div class="chart-title">Recent Incidents</div>
                 <div id="incidentsList"></div>
             </div>
         </div>
         
         <footer>
-            DATA SOURCE: HOUSE OVERSIGHT DEMOCRATS IMMIGRATION ENFORCEMENT DASHBOARD<br>
-            462+ VERIFIED INCIDENTS | NOV 2025 - JAN 2026<br><br>
-            BUILT BY JACOB LEE | VANCOUVER, WA
+            Data Source: House Oversight Democrats Immigration Enforcement Dashboard<br>
+            462+ Verified Incidents | Nov 2025 - Jan 2026<br><br>
+            Built by Jacob Lee | Vancouver, WA
         </footer>
     </div>
     
@@ -374,9 +429,9 @@
         fetch('/api/last_updated')
             .then(res => res.json())
             .then(data => {
-                if (data.hours_ago !== null) {
+                if (data.time_str) {
                     document.getElementById('lastUpdated').textContent = 
-                        `LAST UPDATED: ${data.hours_ago} HOURS AGO`;
+                        `Last updated: ${data.time_str}`;
                 }
             });
         
@@ -402,7 +457,7 @@
             }
             
             autocompleteDiv.innerHTML = matches.map(city =>
-                `<div class="autocomplete-item" onclick="selectCity('${city}')">${city}</div>`
+                `<div class="autocomplete-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`
             ).join('');
             
             autocompleteDiv.style.display = 'block';
@@ -448,7 +503,7 @@
             })
             .catch(err => {
                 document.getElementById('loading').classList.add('hidden');
-                document.getElementById('error').textContent = 'ERROR LOADING DATA';
+                document.getElementById('error').textContent = 'Error loading data';
                 document.getElementById('error').classList.remove('hidden');
             });
         }
@@ -458,7 +513,7 @@
             const riskCard = document.getElementById('riskCard');
             riskCard.className = 'risk-card ' + data.risk_level.toLowerCase();
             document.getElementById('riskLevel').textContent = data.risk_level;
-            document.getElementById('riskScore').textContent = `RISK SCORE: ${data.risk_score}/100`;
+            document.getElementById('riskScore').textContent = `Risk Score: ${data.risk_score}/100`;
             
             // Stats
             document.getElementById('statTotal').textContent = data.total_incidents;
@@ -478,8 +533,8 @@
             const incidentsList = document.getElementById('incidentsList');
             incidentsList.innerHTML = data.recent_incidents.slice(0, 10).map(inc => `
                 <div class="incident-item">
-                    <div class="incident-date">${inc.date || 'UNKNOWN DATE'}</div>
-                    <div class="incident-title">${inc.title || 'NO TITLE'}</div>
+                    <div class="incident-date">${inc.date || 'Unknown date'}</div>
+                    <div class="incident-title">${inc.title || 'No title'}</div>
                     <div class="incident-category">${inc.category || ''}</div>
                 </div>
             `).join('');
@@ -495,16 +550,26 @@
                 chartInstance.destroy();
             }
             
+            // Sample dates if too many (show every 3rd date)
+            const shouldSample = timeline.length > 20;
+            const displayLabels = timeline.map((t, i) => {
+                if (shouldSample && i % 3 !== 0) return '';
+                // Format date: MM/DD
+                const parts = t.date.split('-');
+                return `${parts[1]}/${parts[2]}`;
+            });
+            
             chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: timeline.map(t => t.date),
+                    labels: displayLabels,
                     datasets: [{
-                        label: 'INCIDENTS',
+                        label: 'Incidents',
                         data: timeline.map(t => t.count),
                         backgroundColor: '#fff',
                         borderColor: '#fff',
-                        borderWidth: 2
+                        borderWidth: 0,
+                        borderRadius: 2
                     }]
                 },
                 options: {
@@ -513,31 +578,54 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#000',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#fff',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                title: function(context) {
+                                    return timeline[context[0].dataIndex].date;
+                                },
+                                label: function(context) {
+                                    return `${context.parsed.y} incident${context.parsed.y !== 1 ? 's' : ''}`;
+                                }
+                            }
                         }
                     },
                     scales: {
                         x: {
                             ticks: {
-                                color: '#fff',
+                                color: '#666',
                                 font: {
                                     size: 10,
-                                    weight: 'bold'
-                                }
+                                    weight: '600'
+                                },
+                                maxRotation: 0,
+                                autoSkip: false
                             },
                             grid: {
-                                color: '#333'
+                                color: '#222',
+                                drawBorder: false
                             }
                         },
                         y: {
+                            beginAtZero: true,
                             ticks: {
-                                color: '#fff',
+                                color: '#666',
                                 font: {
-                                    size: 12,
-                                    weight: 'bold'
-                                }
+                                    size: 11,
+                                    weight: '600'
+                                },
+                                precision: 0
                             },
                             grid: {
-                                color: '#333'
+                                color: '#222',
+                                drawBorder: false
                             }
                         }
                     }

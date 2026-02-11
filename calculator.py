@@ -110,9 +110,18 @@ def get_last_updated(csv_path='protest_data_oversight.csv'):
         mtime = os.path.getmtime(csv_path)
         dt = datetime.fromtimestamp(mtime)
         hours_ago = int((datetime.now() - dt).total_seconds() / 3600)
-        return {'hours_ago': hours_ago, 'timestamp': dt.isoformat()}
+        
+        # Format time string with proper grammar
+        if hours_ago == 0:
+            time_str = "less than an hour ago"
+        elif hours_ago == 1:
+            time_str = "1 hour ago"
+        else:
+            time_str = f"{hours_ago} hours ago"
+        
+        return {'hours_ago': hours_ago, 'time_str': time_str, 'timestamp': dt.isoformat()}
     except:
-        return {'hours_ago': None, 'timestamp': None}
+        return {'hours_ago': None, 'time_str': None, 'timestamp': None}
 
 def get_all_cities(csv_path='protest_data_oversight.csv'):
     """Get sorted list of all cities for autocomplete"""
