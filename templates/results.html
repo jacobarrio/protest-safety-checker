@@ -177,6 +177,18 @@
             color: #dc2626;
             margin-top: 5px;
         }
+        .incident-source {
+            font-size: 0.85em;
+            margin-top: 8px;
+        }
+        .incident-source a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .incident-source a:hover {
+            text-decoration: underline;
+        }
         
         .footer {
             text-align: center;
@@ -283,6 +295,11 @@
                 <div class="incident-title">{{ incident['title'] }}</div>
                 {% if incident['category'] %}
                 <div class="incident-tags">{{ incident['category'] }}</div>
+                {% endif %}
+                {% if incident['source_url'] %}
+                <div class="incident-source">
+                    <a href="{{ incident['source_url'] }}" target="_blank" rel="noopener">📰 Read Source</a>
+                </div>
                 {% endif %}
             </div>
             {% endfor %}
