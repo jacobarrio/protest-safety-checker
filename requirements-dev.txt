@@ -1,0 +1,21 @@
+# Development and Testing Dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Testing framework
+pytest>=7.4.0
+pytest-cov>=4.1.0  # Coverage reporting
+pytest-mock>=3.11.0  # Mocking utilities
+
+# Flask testing
+Flask-Testing>=0.8.1  # Additional Flask test utilities
+
+# Code quality
+flake8>=6.0.0  # Linting
+black>=23.0.0  # Code formatting
+isort>=5.12.0  # Import sorting
+
+# Type checking (optional but recommended)
+mypy>=1.4.0
+
+# Include production dependencies
+-r requirements.txt

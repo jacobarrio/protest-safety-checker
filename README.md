@@ -70,6 +70,41 @@ python3 scrape_oversight_selenium.py
 
 Scrapes latest incidents from dashboard (~1-2 minutes).
 
+## Testing
+
+Comprehensive test suite included to ensure reliability.
+
+### Run Tests
+```bash
+# Install testing dependencies
+pip install -r requirements-dev.txt
+
+# Run all tests
+pytest tests/
+
+# Run with coverage report
+pytest tests/ --cov=calculator --cov=app --cov-report=html
+
+# Run specific test file
+pytest tests/test_calculator.py
+
+# Run specific test class
+pytest tests/test_calculator.py::TestNormalizeCityInput
+
+# Run with verbose output
+pytest tests/ -v
+```
+
+### Test Coverage
+The test suite includes:
+- **Unit tests** for all calculator functions (normalize, find, score, etc.)
+- **Edge cases**: empty strings, unicode, special characters, None values
+- **Integration tests** for Flask routes and API endpoints
+- **Mock data tests** to avoid dependency on real CSV files
+
+### Continuous Integration
+Tests run automatically on GitHub Actions for all pull requests.
+
 ## Built By
 
 Jacob - Self-taught ML/RL engineer building resistance tech tools.
