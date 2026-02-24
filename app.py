@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, request, jsonify
-from calculator import get_risk_for_city, get_all_cities, get_last_updated, get_timeline_data
+from calculator import get_risk_for_city, get_all_cities, get_last_updated, get_timeline_data, search_cities
 import pandas as pd
 
 app = Flask(__name__)
@@ -56,8 +56,12 @@ def list_cities():
 
 @app.route('/api/cities')
 def api_cities():
-    """Autocomplete endpoint - returns all cities as JSON"""
-    cities = get_all_cities()
+    """Autocomplete endpoint - supports optional query filtering"""
+    query = request.args.get('q', '').strip()
+    if query:
+        cities = search_cities(query, limit=10)
+    else:
+        cities = get_all_cities()
     return jsonify(cities)
 
 @app.route('/api/last_updated')

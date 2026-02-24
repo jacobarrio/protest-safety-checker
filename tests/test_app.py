@@ -223,14 +223,28 @@ class TestAPICities:
         assert isinstance(data, list)
         assert len(data) == 3
     
+    def test_api_cities_with_query_uses_search(self, client, monkeypatch):
+        """Test that cities API query path uses search_cities"""
+        def mock_search_cities(query, csv_path='protest_data_oversight.csv', limit=10):
+            assert query == 'phoeni'
+            return ['Phoenix, AZ']
+
+        import app as app_module
+        monkeypatch.setattr(app_module, 'search_cities', mock_search_cities)
+
+        response = client.get('/api/cities?q=phoeni')
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data == ['Phoenix, AZ']
+
     def test_api_cities_returns_empty_on_error(self, client, monkeypatch):
         """Test that cities API returns empty list on error"""
         def mock_get_all_cities(csv_path='protest_data_oversight.csv'):
             return []
-        
-        import calculator
-        monkeypatch.setattr(calculator, 'get_all_cities', mock_get_all_cities)
-        
+
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_all_cities', mock_get_all_cities)
+
         response = client.get('/api/cities')
         assert response.status_code == 200
         data = json.loads(response.data)

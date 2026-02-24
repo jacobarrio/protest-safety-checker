@@ -440,27 +440,43 @@
         const autocompleteDiv = document.getElementById('autocomplete');
         
         cityInput.addEventListener('input', function() {
-            const value = this.value.toLowerCase();
-            
+            const value = this.value.trim();
+
             if (!value) {
                 autocompleteDiv.style.display = 'none';
                 return;
             }
-            
-            const matches = allCities.filter(city => 
-                city.toLowerCase().includes(value)
-            ).slice(0, 10);
-            
-            if (matches.length === 0) {
-                autocompleteDiv.style.display = 'none';
-                return;
-            }
-            
-            autocompleteDiv.innerHTML = matches.map(city =>
-                `<div class="autocomplete-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`
-            ).join('');
-            
-            autocompleteDiv.style.display = 'block';
+
+            fetch(`/api/cities?q=${encodeURIComponent(value)}`)
+                .then(res => res.json())
+                .then(matches => {
+                    if (!Array.isArray(matches) || matches.length === 0) {
+                        // fallback to local list if API has no matches
+                        matches = allCities.filter(city => city.toLowerCase().includes(value.toLowerCase())).slice(0, 10);
+                    }
+
+                    if (matches.length === 0) {
+                        autocompleteDiv.style.display = 'none';
+                        return;
+                    }
+
+                    autocompleteDiv.innerHTML = matches.map(city =>
+                        `<div class="autocomplete-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`
+                    ).join('');
+
+                    autocompleteDiv.style.display = 'block';
+                })
+                .catch(() => {
+                    const matches = allCities.filter(city => city.toLowerCase().includes(value.toLowerCase())).slice(0, 10);
+                    if (matches.length === 0) {
+                        autocompleteDiv.style.display = 'none';
+                        return;
+                    }
+                    autocompleteDiv.innerHTML = matches.map(city =>
+                        `<div class="autocomplete-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`
+                    ).join('');
+                    autocompleteDiv.style.display = 'block';
+                });
         });
         
         function selectCity(city) {

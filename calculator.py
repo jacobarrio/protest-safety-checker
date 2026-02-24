@@ -2,6 +2,7 @@ import pandas as pd
 import re
 from datetime import datetime
 import os
+from difflib import SequenceMatcher, get_close_matches
 
 def normalize_city_input(city_input):
     """
@@ -14,20 +15,81 @@ def normalize_city_input(city_input):
     city_input = re.sub(r'[,\s]+', ' ', city_input).strip()
     return city_input
 
+def _read_incident_csv(csv_path):
+    """Read CSV and repair common malformed location rows (e.g. unquoted 'City, ST')."""
+    df = pd.read_csv(csv_path)
+
+    # If location looks like just state abbreviations and index contains city names,
+    # reconstruct location from index + location.
+    if 'location' in df.columns and not isinstance(df.index, pd.RangeIndex):
+        location_vals = df['location'].astype(str).str.strip()
+        likely_state = location_vals.str.fullmatch(r'[A-Z]{2}').fillna(False)
+        if likely_state.mean() > 0.5:
+            city_part = pd.Index(df.index.astype(str)).str.strip()
+            df = df.reset_index(drop=True)
+            df['location'] = [f"{city}, {state}" for city, state in zip(city_part, location_vals)]
+
+    return df
+
+
+def _normalize_location_series(df):
+    """Return a copy of df with normalized location column for matching."""
+    df_copy = df.copy()
+    df_copy['location_normalized'] = df_copy['location'].str.strip().str.lower().apply(
+        lambda x: re.sub(r'[,\s]+', ' ', x).strip()
+    )
+    return df_copy
+
+
+def search_cities(query, csv_path='protest_data_oversight.csv', limit=10):
+    """Return ranked city suggestions for autocomplete and typo tolerance."""
+    cities = get_all_cities(csv_path)
+    if not cities:
+        return []
+
+    normalized_query = normalize_city_input(query)
+    if not normalized_query:
+        return cities[:limit]
+
+    scored = []
+    for city in cities:
+        normalized_city = normalize_city_input(city)
+        score = 0.0
+
+        if normalized_city == normalized_query:
+            score = 1.0
+        elif normalized_city.startswith(normalized_query):
+            score = 0.95
+        elif normalized_query in normalized_city:
+            score = 0.85
+        else:
+            score = SequenceMatcher(None, normalized_query, normalized_city).ratio()
+
+        if score >= 0.45:
+            scored.append((city, score))
+
+    if not scored:
+        normalized_map = {normalize_city_input(city): city for city in cities}
+        fuzzy_norm = get_close_matches(normalized_query, list(normalized_map.keys()), n=limit, cutoff=0.55)
+        return [normalized_map[norm] for norm in fuzzy_norm]
+
+    scored.sort(key=lambda item: (-item[1], item[0]))
+    return [city for city, _ in scored[:limit]]
+
+
 def find_matching_cities(user_input, df):
     """
     Find all cities that match user input (handles variations)
     Returns DataFrame of matching incidents
     """
     normalized_input = normalize_city_input(user_input)
-    
-    # Normalize CSV city names for comparison (column is 'location' not 'City')
-    df['location_normalized'] = df['location'].str.strip().str.lower().apply(
-        lambda x: re.sub(r'[,\s]+', ' ', x).strip()
-    )
-    
+    if not normalized_input or df.empty:
+        return pd.DataFrame()
+
+    df_norm = _normalize_location_series(df)
+
     # Try exact match first
-    exact_match = df[df['location_normalized'] == normalized_input]
+    exact_match = df_norm[df_norm['location_normalized'] == normalized_input]
     if not exact_match.empty:
         return exact_match
     
@@ -39,17 +101,24 @@ def find_matching_cities(user_input, df):
         # Check if all input parts exist in city name
         return all(part in city_name for part in input_parts)
     
-    partial_matches = df[df['location_normalized'].apply(matches_input)]
-    
+    partial_matches = df_norm[df_norm['location_normalized'].apply(matches_input)]
+
     if not partial_matches.empty:
         return partial_matches
-    
+
     # Fallback: starts with (handles typos like "phoeni" -> "phoenix")
     if input_parts:
         first_word = input_parts[0]
-        startswith_matches = df[df['location_normalized'].str.startswith(first_word)]
-        return startswith_matches
-    
+        startswith_matches = df_norm[df_norm['location_normalized'].str.startswith(first_word)]
+        if not startswith_matches.empty:
+            return startswith_matches
+
+    # Fuzzy fallback: pick closest normalized location labels
+    unique_norm_locations = df_norm['location_normalized'].dropna().unique().tolist()
+    fuzzy_matches = get_close_matches(normalized_input, unique_norm_locations, n=3, cutoff=0.65)
+    if fuzzy_matches:
+        return df_norm[df_norm['location_normalized'].isin(fuzzy_matches)]
+
     return pd.DataFrame()  # Empty DataFrame
 
 def calculate_risk_score(city_data):
@@ -74,11 +143,45 @@ def calculate_risk_score(city_data):
     
     total_score = base_score + force_score + citizen_score + sensitive_score
     risk_score = min(int(total_score), 100)  # Cap at 100
+
+    score_breakdown = {
+        'formula': 'min((incidents*2, cap 40) + (use_of_force*1.5) + (us_citizens*1.2) + (sensitive_locations*2), 100)',
+        'components': [
+            {
+                'name': 'Incident volume',
+                'count': total_incidents,
+                'weight': 2.0,
+                'raw_score': total_incidents * 2,
+                'capped_score': round(base_score, 2),
+                'cap': 40
+            },
+            {
+                'name': 'Use of Force incidents',
+                'count': use_of_force,
+                'weight': 1.5,
+                'raw_score': round(force_score, 2)
+            },
+            {
+                'name': 'U.S. Citizen incidents',
+                'count': us_citizens,
+                'weight': 1.2,
+                'raw_score': round(citizen_score, 2)
+            },
+            {
+                'name': 'Sensitive Location incidents',
+                'count': sensitive_locations,
+                'weight': 2.0,
+                'raw_score': round(sensitive_score, 2)
+            }
+        ],
+        'pre_cap_total': round(total_score, 2),
+        'final_score': risk_score
+    }
     
     # Determine risk level
     if risk_score >= 70:
         risk_level = "High"
-    elif risk_score >= 40:
+    elif risk_score >= 30:
         risk_level = "Medium"
     else:
         risk_level = "Low"
@@ -101,7 +204,8 @@ def calculate_risk_score(city_data):
         'us_citizens_pct': round((us_citizens / total_incidents * 100) if total_incidents else 0, 1),
         'sensitive_locations': sensitive_locations,
         'sensitive_locations_pct': round((sensitive_locations / total_incidents * 100) if total_incidents else 0, 1),
-        'recent_incidents': incidents_list
+        'recent_incidents': incidents_list,
+        'score_breakdown': score_breakdown
     }
 
 def get_last_updated(csv_path='protest_data_oversight.csv'):
@@ -126,8 +230,8 @@ def get_last_updated(csv_path='protest_data_oversight.csv'):
 def get_all_cities(csv_path='protest_data_oversight.csv'):
     """Get sorted list of all cities for autocomplete"""
     try:
-        df = pd.read_csv(csv_path)
-        cities = sorted(df['location'].str.strip().unique())
+        df = _read_incident_csv(csv_path)
+        cities = sorted(df['location'].astype(str).str.strip().unique())
         return cities
     except:
         return []
@@ -135,7 +239,7 @@ def get_all_cities(csv_path='protest_data_oversight.csv'):
 def get_timeline_data(city_input=None, csv_path='protest_data_oversight.csv'):
     """Get incident counts by date for timeline chart"""
     try:
-        df = pd.read_csv(csv_path)
+        df = _read_incident_csv(csv_path)
         
         # Filter by city if provided
         if city_input:
@@ -161,7 +265,7 @@ def get_risk_for_city(city_input, csv_path='protest_data_oversight.csv'):
     Main function: load data, find city, calculate risk
     """
     try:
-        df = pd.read_csv(csv_path)
+        df = _read_incident_csv(csv_path)
     except FileNotFoundError:
         return {'error': 'Data file not found. Please run scraper first.'}
     

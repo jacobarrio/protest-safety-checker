@@ -15,7 +15,8 @@ from calculator import (
     get_last_updated,
     get_all_cities,
     get_timeline_data,
-    get_risk_for_city
+    get_risk_for_city,
+    search_cities
 )
 
 
@@ -160,6 +161,23 @@ class TestFindMatchingCities:
         assert result.empty
 
 
+class TestSearchCities:
+    """Tests for search_cities()"""
+
+    def test_search_cities_returns_ranked_matches(self, tmp_path):
+        csv_path = tmp_path / 'cities.csv'
+        csv_path.write_text(
+            "location,date,category,description\n"
+            "Portland, OR,2026-01-01,Use of Force,Test\n"
+            "Phoenix, AZ,2026-01-01,Use of Force,Test\n"
+            "Los Angeles, CA,2026-01-01,Use of Force,Test\n"
+        )
+
+        results = search_cities('phoeni', csv_path=str(csv_path), limit=5)
+        assert results
+        assert results[0] == 'Phoenix, AZ'
+
+
 class TestCalculateRiskScore:
     """Tests for calculate_risk_score() function"""
     
@@ -179,6 +197,8 @@ class TestCalculateRiskScore:
         assert 'total_incidents' in result
         assert result['total_incidents'] == 10
         assert result['use_of_force'] == 5
+        assert 'score_breakdown' in result
+        assert result['score_breakdown']['final_score'] == result['risk_score']
     
     def test_empty_dataframe(self):
         """Test with empty DataFrame"""

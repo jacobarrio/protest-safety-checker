@@ -137,6 +137,35 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
+        .transparency {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .transparency h2 { margin-bottom: 12px; }
+        .formula {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.85em;
+            margin-bottom: 12px;
+            color: #334155;
+        }
+        .factor-row {
+            display: grid;
+            grid-template-columns: 1.5fr 0.7fr 0.7fr 0.9fr;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.92em;
+        }
+        .factor-row.header {
+            font-weight: 600;
+            color: #475569;
+        }
         .recommendations h2 { margin-bottom: 15px; }
         .recommendation-item {
             padding: 12px;
@@ -258,6 +287,35 @@
             </div>
         </div>
         
+        <div class="transparency">
+            <h2>How this score was calculated</h2>
+            {% if data.score_breakdown and data.score_breakdown.components %}
+                <div class="formula">{{ data.score_breakdown.formula }}</div>
+                <div class="factor-row header">
+                    <div>Factor</div><div>Count</div><div>Weight</div><div>Score</div>
+                </div>
+                {% for component in data.score_breakdown.components %}
+                <div class="factor-row">
+                    <div>{{ component.name }}</div>
+                    <div>{{ component.count }}</div>
+                    <div>{{ component.weight }}</div>
+                    <div>
+                        {% if component.capped_score is defined %}
+                            {{ component.capped_score }} (cap {{ component.cap }})
+                        {% else %}
+                            {{ component.raw_score }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                <div style="margin-top:10px;color:#475569;font-size:0.9em;">
+                    Pre-cap total: {{ data.score_breakdown.pre_cap_total }} → Final score: <strong>{{ data.score_breakdown.final_score }}/100</strong>
+                </div>
+            {% else %}
+                <div style="color:#64748b;">Score component details are unavailable for this result.</div>
+            {% endif %}
+        </div>
+
         <div class="recommendations">
             <h2>Safety Recommendations</h2>
             {% if data.risk_level == 'High' %}
