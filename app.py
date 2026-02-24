@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, jsonify
 from calculator import get_risk_for_city, get_all_cities, get_last_updated, get_timeline_data
 import pandas as pd
@@ -71,5 +72,10 @@ def api_timeline():
     timeline = get_timeline_data(city)
     return jsonify(timeline)
 
+@app.route('/health', methods=['GET'])
+def health():
+return {'ok': True}, 200
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
