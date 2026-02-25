@@ -122,9 +122,7 @@ def find_matching_cities(user_input, df):
     return pd.DataFrame()  # Empty DataFrame
 
 def calculate_risk_score(city_data):
-    """
-    Calculate risk score from incident data
-    """
+    """Calculate risk score from incident data."""
     if city_data.empty:
         return None
     
@@ -194,6 +192,14 @@ def calculate_risk_score(city_data):
             if pd.isna(value):
                 incident[key] = None
     
+    component_scores = [
+        ('Incident volume', base_score),
+        ('Use of Force incidents', force_score),
+        ('U.S. Citizen incidents', citizen_score),
+        ('Sensitive Location incidents', sensitive_score)
+    ]
+    top_drivers = sorted(component_scores, key=lambda x: x[1], reverse=True)[:3]
+
     return {
         'risk_level': risk_level,
         'risk_score': risk_score,
@@ -205,8 +211,81 @@ def calculate_risk_score(city_data):
         'sensitive_locations': sensitive_locations,
         'sensitive_locations_pct': round((sensitive_locations / total_incidents * 100) if total_incidents else 0, 1),
         'recent_incidents': incidents_list,
-        'score_breakdown': score_breakdown
+        'score_breakdown': score_breakdown,
+        'top_drivers': [
+            {'name': name, 'score': round(score, 2)} for name, score in top_drivers
+        ]
     }
+
+
+def get_data_summary(csv_path='protest_data_oversight.csv'):
+    """Get dataset-level freshness and source transparency stats."""
+    try:
+        df = _read_incident_csv(csv_path)
+        df['date_parsed'] = pd.to_datetime(df['date'], errors='coerce')
+        valid_dates = df['date_parsed'].dropna()
+
+        earliest = valid_dates.min()
+        latest = valid_dates.max()
+
+        return {
+            'total_records': int(len(df)),
+            'unique_locations': int(df['location'].astype(str).nunique()),
+            'date_range': {
+                'start': earliest.strftime('%Y-%m-%d') if pd.notna(earliest) else None,
+                'end': latest.strftime('%Y-%m-%d') if pd.notna(latest) else None
+            }
+        }
+    except Exception:
+        return {
+            'total_records': None,
+            'unique_locations': None,
+            'date_range': {'start': None, 'end': None}
+        }
+
+
+def get_detention_facility_data(csv_path='protest_data_oversight.csv', limit_locations=25):
+    """
+    Build a detention-related transparency page from available oversight incidents.
+    Uses title/category keyword matching for detention/custody/facility signals.
+    """
+    try:
+        df = _read_incident_csv(csv_path)
+        detention_pattern = r'detention|detained|detain|facility|jail|custody|processing center|processing centre|holding'
+
+        mask = (
+            df['category'].astype(str).str.contains(detention_pattern, case=False, na=False) |
+            df['title'].astype(str).str.contains(detention_pattern, case=False, na=False)
+        )
+        filtered = df[mask].copy()
+
+        if filtered.empty:
+            return {'total_detention_related': 0, 'locations': [], 'incidents': []}
+
+        filtered['date_parsed'] = pd.to_datetime(filtered['date'], errors='coerce')
+
+        grouped = (
+            filtered.groupby('location', dropna=False)
+            .size()
+            .reset_index(name='incident_count')
+            .sort_values('incident_count', ascending=False)
+            .head(limit_locations)
+        )
+
+        incidents = filtered.sort_values('date_parsed', ascending=False).head(100).to_dict('records')
+        for incident in incidents:
+            for key, value in incident.items():
+                if pd.isna(value):
+                    incident[key] = None
+
+        return {
+            'total_detention_related': int(len(filtered)),
+            'locations': grouped.to_dict('records'),
+            'incidents': incidents
+        }
+    except Exception:
+        return {'total_detention_related': 0, 'locations': [], 'incidents': []}
+
 
 def get_last_updated(csv_path='protest_data_oversight.csv'):
     """Get last modified time of CSV file"""
@@ -223,7 +302,8 @@ def get_last_updated(csv_path='protest_data_oversight.csv'):
         else:
             time_str = f"{hours_ago} hours ago"
         
-        return {'hours_ago': hours_ago, 'time_str': time_str, 'timestamp': dt.isoformat()}
+        display = dt.strftime('%Y-%m-%d %I:%M %p')
+        return {'hours_ago': hours_ago, 'time_str': time_str, 'timestamp': dt.isoformat(), 'display': display}
     except:
         return {'hours_ago': None, 'time_str': None, 'timestamp': None}
 
@@ -260,6 +340,173 @@ def get_timeline_data(city_input=None, csv_path='protest_data_oversight.csv'):
     except:
         return []
 
+def get_live_feed(limit=30, csv_path='protest_data_oversight.csv'):
+    """Latest incidents feed for near-real-time UI polling."""
+    try:
+        df = _read_incident_csv(csv_path)
+        df['date_parsed'] = pd.to_datetime(df['date'], errors='coerce')
+        df = df.sort_values('date_parsed', ascending=False).head(limit)
+        items = df[['date', 'location', 'category', 'title', 'source_url']].to_dict('records')
+        for item in items:
+            for k, v in item.items():
+                if pd.isna(v):
+                    item[k] = None
+        return items
+    except Exception:
+        return []
+
+
+def get_black_site_signals(csv_path='protest_data_oversight.csv', limit=40):
+    """
+    Possible undisclosed detention signal extraction.
+    [Inference] based on keyword signals in title/category, not definitive proof.
+    """
+    try:
+        df = _read_incident_csv(csv_path)
+        signal_pattern = r'undisclosed|unknown location|unmarked|plainclothes|private contractor|holding location|temporary facility|secret|black site'
+        mask = (
+            df['title'].astype(str).str.contains(signal_pattern, case=False, na=False) |
+            df['category'].astype(str).str.contains(signal_pattern, case=False, na=False)
+        )
+        hits = df[mask].copy()
+        if hits.empty:
+            return {'total_signals': 0, 'locations': [], 'incidents': []}
+
+        hits['date_parsed'] = pd.to_datetime(hits['date'], errors='coerce')
+        grouped = (
+            hits.groupby('location', dropna=False)
+            .size()
+            .reset_index(name='signal_count')
+            .sort_values('signal_count', ascending=False)
+            .head(20)
+            .to_dict('records')
+        )
+
+        incidents = hits.sort_values('date_parsed', ascending=False).head(limit).to_dict('records')
+        for item in incidents:
+            for k, v in item.items():
+                if pd.isna(v):
+                    item[k] = None
+
+        return {
+            'total_signals': int(len(hits)),
+            'locations': grouped,
+            'incidents': incidents
+        }
+    except Exception:
+        return {'total_signals': 0, 'locations': [], 'incidents': []}
+
+
+def get_spending_analytics(spend_csv_path='data/dhs_site_spending.csv'):
+    """
+    Spending analytics by site and time.
+    Expects CSV columns: date, site, amount_usd, category, verification
+    """
+    if not os.path.exists(spend_csv_path):
+        return {
+            'available': False,
+            'message': 'No spending CSV found yet. Add data/dhs_site_spending.csv to enable spend charts.',
+            'last_12_months': [],
+            'last_10_years': [],
+            'by_site': []
+        }
+
+    try:
+        df = pd.read_csv(spend_csv_path)
+        expected = {'date', 'site', 'amount_usd'}
+        if not expected.issubset(set(df.columns)):
+            return {
+                'available': False,
+                'message': 'Spending CSV missing required columns: date, site, amount_usd',
+                'last_12_months': [],
+                'last_10_years': [],
+                'by_site': []
+            }
+
+        df['date_parsed'] = pd.to_datetime(df['date'], errors='coerce')
+        df = df.dropna(subset=['date_parsed']).copy()
+        df['amount_usd'] = pd.to_numeric(df['amount_usd'], errors='coerce').fillna(0)
+
+        now = pd.Timestamp.now()
+        last_12 = df[df['date_parsed'] >= (now - pd.DateOffset(months=12))]
+        monthly = (
+            last_12.groupby(last_12['date_parsed'].dt.to_period('M'))['amount_usd']
+            .sum()
+            .reset_index()
+        )
+        monthly['period'] = monthly['date_parsed'].astype(str)
+        last_12_months = monthly[['period', 'amount_usd']].to_dict('records')
+
+        last_10 = df[df['date_parsed'] >= (now - pd.DateOffset(years=10))]
+        yearly = (
+            last_10.groupby(last_10['date_parsed'].dt.year)['amount_usd']
+            .sum()
+            .reset_index()
+            .rename(columns={'date_parsed': 'year'})
+        )
+        last_10_years = yearly[['year', 'amount_usd']].to_dict('records')
+
+        by_site = (
+            df.groupby('site')['amount_usd']
+            .sum()
+            .reset_index()
+            .sort_values('amount_usd', ascending=False)
+            .head(25)
+            .to_dict('records')
+        )
+
+        category_col = 'mapped_category' if 'mapped_category' in df.columns else 'category'
+        by_category = (
+            df.groupby(category_col)['amount_usd']
+            .sum()
+            .reset_index()
+            .rename(columns={category_col: 'category'})
+            .sort_values('amount_usd', ascending=False)
+            .to_dict('records')
+        )
+
+        confidence_counts = []
+        if 'confidence' in df.columns:
+            confidence_counts = (
+                df.groupby('confidence')
+                .size()
+                .reset_index(name='count')
+                .sort_values('count', ascending=False)
+                .to_dict('records')
+            )
+
+        facilities = []
+        if 'facility_name' in df.columns:
+            facilities = (
+                df.groupby('facility_name')['amount_usd']
+                .sum()
+                .reset_index()
+                .sort_values('amount_usd', ascending=False)
+                .head(20)
+                .to_dict('records')
+            )
+
+        return {
+            'available': True,
+            'message': None,
+            'last_12_months': last_12_months,
+            'last_10_years': last_10_years,
+            'by_site': by_site,
+            'by_category': by_category,
+            'confidence_counts': confidence_counts,
+            'by_facility': facilities,
+            'total_usd': float(df['amount_usd'].sum())
+        }
+    except Exception as exc:
+        return {
+            'available': False,
+            'message': f'Spending analytics error: {exc}',
+            'last_12_months': [],
+            'last_10_years': [],
+            'by_site': []
+        }
+
+
 def get_risk_for_city(city_input, csv_path='protest_data_oversight.csv'):
     """
     Main function: load data, find city, calculate risk
@@ -283,9 +530,29 @@ def get_risk_for_city(city_input, csv_path='protest_data_oversight.csv'):
     matched_cities = city_data['location'].str.strip().unique()
     
     risk_data = calculate_risk_score(city_data)
+
+    total_incidents = risk_data.get('total_incidents', 0)
+    if total_incidents >= 25:
+        confidence = 'High'
+    elif total_incidents >= 10:
+        confidence = 'Medium'
+    else:
+        confidence = 'Low'
+
+    top_drivers = risk_data.get('top_drivers', [])
+    driver_text = ', '.join([f"{d['name']} ({d['score']})" for d in top_drivers[:3]])
+
     risk_data['matched_cities'] = list(matched_cities)
     risk_data['search_term'] = city_input
     risk_data['timeline'] = get_timeline_data(city_input, csv_path)
     risk_data['last_updated'] = get_last_updated(csv_path)
-    
+    risk_data['data_summary'] = get_data_summary(csv_path)
+    risk_data['confidence'] = confidence
+    risk_data['confidence_reason'] = (
+        f"Based on {total_incidents} incidents matched for this location."
+    )
+    risk_data['score_explanation'] = (
+        f"Top score drivers: {driver_text}" if driver_text else "Score drivers unavailable."
+    )
+
     return risk_data

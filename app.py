@@ -1,6 +1,17 @@
 import os
 from flask import Flask, render_template, request, jsonify
-from calculator import get_risk_for_city, get_all_cities, get_last_updated, get_timeline_data, search_cities
+from calculator import (
+    get_risk_for_city,
+    get_all_cities,
+    get_last_updated,
+    get_timeline_data,
+    search_cities,
+    get_detention_facility_data,
+    get_data_summary,
+    get_black_site_signals,
+    get_spending_analytics,
+    get_live_feed,
+)
 import pandas as pd
 
 app = Flask(__name__)
@@ -68,6 +79,44 @@ def api_cities():
 def api_last_updated():
     """Get last data update time"""
     return jsonify(get_last_updated())
+
+@app.route('/api/data_summary')
+def api_data_summary():
+    """Get high-level dataset transparency stats"""
+    return jsonify(get_data_summary())
+
+@app.route('/detention-facilities')
+def detention_facilities():
+    """Detention/facility related incidents transparency page"""
+    data = get_detention_facility_data()
+    summary = get_data_summary()
+    last_updated = get_last_updated()
+    return render_template('detention_facilities.html', data=data, summary=summary, last_updated=last_updated)
+
+@app.route('/intel')
+def intelligence_dashboard():
+    """Detention + spending + signal intelligence dashboard"""
+    detention = get_detention_facility_data()
+    black_sites = get_black_site_signals()
+    spending = get_spending_analytics()
+    summary = get_data_summary()
+    return render_template(
+        'intelligence.html',
+        detention=detention,
+        black_sites=black_sites,
+        spending=spending,
+        summary=summary,
+        last_updated=get_last_updated(),
+    )
+
+@app.route('/api/live-feed')
+def api_live_feed():
+    limit = int(request.args.get('limit', 30))
+    return jsonify(get_live_feed(limit=limit))
+
+@app.route('/api/spending-analytics')
+def api_spending_analytics():
+    return jsonify(get_spending_analytics())
 
 @app.route('/api/timeline')
 def api_timeline():

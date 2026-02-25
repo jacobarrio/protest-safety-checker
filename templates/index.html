@@ -1,661 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICE Incident Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #0a0a0a;
-            color: #f5f5f5;
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
-        }
-        
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 60px 24px;
-        }
-        
-        header {
-            border-bottom: 3px solid #fff;
-            padding-bottom: 24px;
-            margin-bottom: 48px;
-        }
-        
-        h1 {
-            font-size: 42px;
-            font-weight: 900;
-            letter-spacing: -1.5px;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            line-height: 1;
-        }
-        
-        .subtitle {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #999;
-            font-weight: 600;
-        }
-        
-        .updated {
-            font-size: 10px;
-            color: #888;
-            margin-top: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 500;
-        }
-        
-        .search-box {
-            background: #1a1a1a;
-            border: 2px solid #333;
-            padding: 32px;
-            margin-bottom: 48px;
-            position: relative;
-        }
-        
-        .search-box label {
-            display: block;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
-            font-weight: 700;
-            color: #aaa;
-        }
-        
-        #cityInput {
-            width: 100%;
-            font-size: 24px;
-            padding: 16px;
-            border: 2px solid #333;
-            background: #0a0a0a;
-            color: #fff;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-        }
-        
-        #cityInput:focus {
-            outline: none;
-            border-color: #fff;
-        }
-        
-        #autocomplete {
-            position: absolute;
-            left: 32px;
-            right: 32px;
-            background: #000;
-            border: 2px solid #fff;
-            max-height: 280px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.8);
-        }
-        
-        .autocomplete-item {
-            padding: 12px 16px;
-            cursor: pointer;
-            border-bottom: 1px solid #222;
-            font-size: 13px;
-            font-weight: 500;
-        }
-        
-        .autocomplete-item:hover {
-            background: #fff;
-            color: #000;
-        }
-        
-        button {
-            background: #fff;
-            color: #000;
-            border: none;
-            padding: 16px 32px;
-            font-size: 13px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 16px;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.15s ease;
-        }
-        
-        button:hover {
-            background: #000;
-            color: #fff;
-            box-shadow: inset 0 0 0 2px #fff;
-        }
-        
-        .risk-card {
-            border: 4px solid;
-            padding: 32px;
-            margin-bottom: 32px;
-        }
-        
-        .risk-card.high {
-            border-color: #ef4444;
-            background: linear-gradient(135deg, #1a0000 0%, #0a0000 100%);
-        }
-        
-        .risk-card.medium {
-            border-color: #eab308;
-            background: linear-gradient(135deg, #1a1a00 0%, #0a0a00 100%);
-        }
-        
-        .risk-card.low {
-            border-color: #22c55e;
-            background: linear-gradient(135deg, #001a00 0%, #000a00 100%);
-        }
-        
-        .risk-level {
-            font-size: 48px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            margin-bottom: 6px;
-            line-height: 1;
-        }
-        
-        .risk-score {
-            font-size: 18px;
-            font-weight: 600;
-            color: #999;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-        
-        .stat-box {
-            background: #1a1a1a;
-            border: 2px solid #333;
-            padding: 24px;
-            transition: border-color 0.2s ease;
-        }
-        
-        .stat-box:hover {
-            border-color: #555;
-        }
-        
-        .stat-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
-            font-weight: 700;
-            color: #999;
-        }
-        
-        .stat-value {
-            font-size: 40px;
-            font-weight: 900;
-            line-height: 1;
-            margin-bottom: 4px;
-        }
-        
-        .stat-pct {
-            font-size: 12px;
-            color: #888;
-            font-weight: 600;
-        }
-        
-        .chart-box {
-            background: #1a1a1a;
-            border: 2px solid #333;
-            padding: 32px;
-            margin-bottom: 32px;
-        }
-        
-        .chart-title {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 800;
-            margin-bottom: 24px;
-            color: #fff;
-        }
-        
-        .incidents {
-            background: #1a1a1a;
-            border: 2px solid #333;
-            padding: 32px;
-        }
-        
-        .incident-item {
-            border-left: 3px solid #fff;
-            padding: 16px 20px;
-            margin-bottom: 16px;
-            background: #0a0a0a;
-            transition: background 0.15s ease;
-        }
-        
-        .incident-item:hover {
-            background: #1a1a1a;
-        }
-        
-        .incident-date {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-            color: #888;
-            font-weight: 600;
-        }
-        
-        .incident-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            line-height: 1.4;
-        }
-        
-        .incident-category {
-            font-size: 10px;
-            text-transform: uppercase;
-            color: #ef4444;
-            letter-spacing: 1px;
-            font-weight: 700;
-        }
-        
-        footer {
-            margin-top: 64px;
-            padding-top: 32px;
-            border-top: 2px solid #222;
-            font-size: 10px;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            line-height: 1.6;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 80px 20px;
-            font-size: 18px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            font-weight: 700;
-            color: #aaa;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        
-        .error {
-            background: #1a0000;
-            border: 2px solid #ef4444;
-            padding: 40px;
-            text-align: center;
-            font-size: 16px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 40px 16px;
-            }
-            
-            h1 {
-                font-size: 32px;
-            }
-            
-            .stats {
-                grid-template-columns: 1fr;
-            }
-            
-            #cityInput {
-                font-size: 20px;
-            }
-            
-            .risk-level {
-                font-size: 36px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ICE Risk Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Archivo:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:#eef1f7;color:#10254d}
+    .wrap{max-width:1160px;margin:0 auto;padding:20px}
+
+    .topbar{display:flex;justify-content:space-between;align-items:center;background:#04084f;color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px}
+    .brand{display:flex;align-items:center;gap:10px;font-family:Archivo, sans-serif;font-size:1.04rem;font-weight:800;letter-spacing:.02em}
+    .brand svg{width:26px;height:26px;display:block}
+    .brand small{display:block;font-size:.68rem;font-weight:600;color:#bfdbfe;letter-spacing:.06em;text-transform:uppercase}
+    .topnav a{color:#dbeafe;text-decoration:none;font-family:Archivo,sans-serif;font-weight:700;font-size:.88rem;letter-spacing:.04em;text-transform:uppercase;margin-left:12px}
+    .topnav a:hover{color:#fff;text-decoration:underline}
+
+    .layout{display:grid;grid-template-columns:250px 1fr;gap:14px;align-items:start}
+    .sidebar{background:#f7f9ff;border:1px solid #cad6ee;border-radius:14px;padding:14px;height:fit-content;position:sticky;top:14px}
+    .sidebar-title{font-family:Archivo,sans-serif;font-size:.76rem;color:#405a89;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+    .side-link{display:block;padding:9px 10px;border-radius:10px;color:#0f2d66;text-decoration:none;font-family:Archivo,sans-serif;font-weight:700;font-size:.88rem;letter-spacing:.02em;text-transform:uppercase;margin-bottom:4px}
+    .side-link:hover{background:#eef4ff}
+
+    .hero{background:#04084f;border:1px solid #1f2a77;border-radius:16px;padding:24px}
+    .title{font-family:"DM Serif Display", serif;font-size:3rem;line-height:1.05;font-weight:400;letter-spacing:-0.01em;color:#f4f7ff;text-align:center}
+    .sub{margin-top:10px;color:#c5d3ff;text-align:center;font-family:Archivo,sans-serif;font-size:.92rem;letter-spacing:.03em;text-transform:uppercase}
+
+    .search-card{margin-top:18px;background:#eef2fb;border:1px solid #c8d3ec;border-radius:14px;padding:14px;position:relative}
+    .search-row{display:grid;grid-template-columns:1fr auto;gap:10px}
+    input{width:100%;padding:13px 14px;border:1px solid #b9c9e8;border-radius:12px;background:#fff;color:#102a5f;font-size:1rem}
+    button{border:none;border-radius:12px;padding:14px 20px;font-family:Archivo,sans-serif;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:#2d62e8;color:#fff;cursor:pointer}
+    button:hover{background:#0b4ad0}
+    #autocomplete{position:absolute;top:66px;left:14px;right:130px;background:#fff;border:1px solid #bfd0ef;border-radius:12px;max-height:220px;overflow:auto;display:none;z-index:10}
+    .autocomplete-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid #edf2fb}
+    .autocomplete-item:hover{background:#eff6ff}
+    .meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;color:#5f7299;font-size:.86rem}
+
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    .kpi{background:#fff;border:1px solid #cfdaf0;border-radius:12px;padding:14px}
+    .k{font-size:.76rem;color:#5f7299;text-transform:uppercase;letter-spacing:.05em}
+    .v{font-size:1.4rem;font-weight:800;margin-top:6px;color:#12306b}
+
+    .panel{box-shadow:0 6px 18px rgba(18,48,107,0.06);background:#fff;border:1px solid #cfdaf0;border-radius:14px;padding:14px;margin-top:12px}
+    .panel h3{font-size:1rem;margin-bottom:8px;color:#11316d}
+    .muted{color:#5f7299;font-size:.9rem}
+
+    .risk-box{display:flex;justify-content:space-between;gap:14px;align-items:center}
+    .risk-level{font-size:1.8rem;font-weight:800}
+    .badge{padding:7px 10px;border-radius:999px;border:1px solid #bfd0ef;background:#eff6ff;font-weight:700;font-size:.8rem;color:#1849a9}
+
+    .drivers li{margin:5px 0;color:#334f84}
+    .incident{border-left:3px solid #1e63f3;background:#f8fbff;padding:10px;border-radius:6px;margin-bottom:8px}
+    .incident .d{font-size:.8rem;color:#5f7299}
+    .incident .t{font-weight:600;margin-top:4px;color:#102a5f}
+    .incident .c{font-size:.84rem;color:#a61b2b;margin-top:4px}
+
+    .site-footer{margin-top:14px;background:#fff;border:1px solid #cfdaf0;border-radius:14px;padding:14px}
+    .footer-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+    .source-logos{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .source-logo{display:flex;align-items:center;gap:8px;border:1px solid #cad6ef;border-radius:12px;padding:6px 9px;background:#f4f7ff}
+    .source-logo span{font-size:.78rem;color:#244a92;font-weight:700}
+    .github-link{color:#1e63f3;text-decoration:none;font-weight:700}
+
+    .loading,.error{margin-top:10px;padding:14px;border-radius:12px}
+    .loading{background:#eef4ff;color:#17429f}
+    .error{background:#fff0f1;color:#9c1c2d;border:1px solid #f6ccd1}
+    .hidden{display:none}
+
+    @media(max-width:760px){.layout{grid-template-columns:1fr}.sidebar{position:static} .kpis{grid-template-columns:repeat(2,1fr)} .search-row{grid-template-columns:1fr} #autocomplete{right:14px;top:106px}}
+    @media(max-width:560px){.kpis{grid-template-columns:1fr} .topbar{flex-direction:column;align-items:flex-start;gap:8px}}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>ICE Incident Tracker</h1>
-            <div class="subtitle">Congressional Oversight Data</div>
-            <div class="updated" id="lastUpdated">Loading...</div>
-        </header>
-        
-        <div class="search-box">
-            <label for="cityInput">Enter Location</label>
-            <input 
-                type="text" 
-                id="cityInput" 
-                placeholder="City name"
-                autocomplete="off"
-            />
-            <div id="autocomplete"></div>
-            <button onclick="checkRisk()">Analyze Risk</button>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M32 6L54 14V30C54 44.5 45.2 53.8 32 58C18.8 53.8 10 44.5 10 30V14L32 6Z" fill="#E0ECFF"/>
+          <path d="M32 12L49 18V30C49 41 42.7 48.4 32 52C21.3 48.4 15 41 15 30V18L32 12Z" fill="#1E63F3"/>
+          <path d="M28 22H36V32H44V40H36V48H28V40H20V32H28V22Z" fill="white"/>
+        </svg>
+        <div>
+          ICE RISK TRACKER
+          <small>Protest Safety Checker</small>
         </div>
-        
-        <div id="loading" class="loading hidden">
-            Loading data...
-        </div>
-        
-        <div id="error" class="error hidden"></div>
-        
-        <div id="results" class="hidden">
-            <div id="riskCard" class="risk-card">
-                <div class="risk-level" id="riskLevel"></div>
-                <div class="risk-score" id="riskScore"></div>
-            </div>
-            
-            <div class="stats">
-                <div class="stat-box">
-                    <div class="stat-label">Total Incidents</div>
-                    <div class="stat-value" id="statTotal">0</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">Use of Force</div>
-                    <div class="stat-value" style="color: #ef4444" id="statForce">0</div>
-                    <div class="stat-pct" id="statForcePct"></div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">U.S. Citizens</div>
-                    <div class="stat-value" style="color: #eab308" id="statCitizen">0</div>
-                    <div class="stat-pct" id="statCitizenPct"></div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">Sensitive Locations</div>
-                    <div class="stat-value" style="color: #a855f7" id="statSensitive">0</div>
-                    <div class="stat-pct" id="statSensitivePct"></div>
-                </div>
-            </div>
-            
-            <div class="chart-box">
-                <div class="chart-title">Incidents Over Time</div>
-                <canvas id="timelineChart"></canvas>
-            </div>
-            
-            <div class="incidents">
-                <div class="chart-title">Recent Incidents</div>
-                <div id="incidentsList"></div>
-            </div>
-        </div>
-        
-        <footer>
-            Data Source: House Oversight Democrats Immigration Enforcement Dashboard<br>
-            462+ Verified Incidents | Nov 2025 - Jan 2026<br><br>
-            Built by Jacob Lee | Vancouver, WA
-        </footer>
+      </div>
+      <div class="topnav">
+        <a href="/intel">Intel dashboard</a>
+        <a href="/detention-facilities">Detention facilities</a>
+      </div>
     </div>
-    
-    <script>
-        let allCities = [];
-        let chartInstance = null;
-        
-        // Load cities for autocomplete
-        fetch('/api/cities')
-            .then(res => res.json())
-            .then(cities => {
-                allCities = cities;
-            });
-        
-        // Load last updated time
-        fetch('/api/last_updated')
-            .then(res => res.json())
-            .then(data => {
-                if (data.time_str) {
-                    document.getElementById('lastUpdated').textContent = 
-                        `Last updated: ${data.time_str}`;
-                }
-            });
-        
-        // Autocomplete functionality
-        const cityInput = document.getElementById('cityInput');
-        const autocompleteDiv = document.getElementById('autocomplete');
-        
-        cityInput.addEventListener('input', function() {
-            const value = this.value.trim();
 
-            if (!value) {
-                autocompleteDiv.style.display = 'none';
-                return;
-            }
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-title">Categories</div>
+        <a class="side-link" href="#search">Risk Search</a>
+        <a class="side-link" href="/intel">Trending Intelligence</a>
+        <a class="side-link" href="/intel">Spending Analysis</a>
+        <a class="side-link" href="/intel">Live Feed</a>
+        <a class="side-link" href="/intel">Full Intelligence Dashboard →</a>
+      </aside>
 
-            fetch(`/api/cities?q=${encodeURIComponent(value)}`)
-                .then(res => res.json())
-                .then(matches => {
-                    if (!Array.isArray(matches) || matches.length === 0) {
-                        // fallback to local list if API has no matches
-                        matches = allCities.filter(city => city.toLowerCase().includes(value.toLowerCase())).slice(0, 10);
-                    }
+      <div>
+    <div class="hero" id="search">
+      <div class="title">ICE Activity Risk Intelligence</div>
+      <div class="sub">Professional incident risk lookup with transparent scoring and confidence labels.</div>
 
-                    if (matches.length === 0) {
-                        autocompleteDiv.style.display = 'none';
-                        return;
-                    }
+      <div class="search-card">
+        <div class="search-row">
+          <input id="cityInput" placeholder="Enter city (e.g., Portland, OR)" autocomplete="off" />
+          <button onclick="checkRisk()">Analyze</button>
+        </div>
+        <div id="autocomplete"></div>
+        <div class="meta">
+          <span id="lastUpdated">Last updated: loading...</span>
+          <span id="datasetSummary">Dataset: loading...</span>
+        </div>
+      </div>
+    </div>
 
-                    autocompleteDiv.innerHTML = matches.map(city =>
-                        `<div class="autocomplete-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`
-                    ).join('');
+    <div id="loading" class="loading hidden">Analyzing incidents…</div>
+    <div id="error" class="error hidden"></div>
 
-                    autocompleteDiv.style.display = 'block';
-                })
-                .catch(() => {
-                    const matches = allCities.filter(city => city.toLowerCase().includes(value.toLowerCase())).slice(0, 10);
-                    if (matches.length === 0) {
-                        autocompleteDiv.style.display = 'none';
-                        return;
-                    }
-                    autocompleteDiv.innerHTML = matches.map(city =>
-                        `<div class="autocomplete-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`
-                    ).join('');
-                    autocompleteDiv.style.display = 'block';
-                });
-        });
-        
-        function selectCity(city) {
-            cityInput.value = city;
-            autocompleteDiv.style.display = 'none';
-            checkRisk();
+    <div id="results" class="hidden">
+      <div class="panel">
+        <div class="risk-box">
+          <div>
+            <div class="risk-level" id="riskLevel">Low Risk</div>
+            <div class="muted" id="riskScore">Risk score: 0 / 100</div>
+          </div>
+          <div>
+            <div class="badge" id="confidenceBadge">Confidence: Low</div>
+            <div class="muted" id="confidenceReason"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><div class="k">Total incidents</div><div class="v" id="statTotal">0</div></div>
+        <div class="kpi"><div class="k">Use of force</div><div class="v" id="statForce">0</div><div class="muted" id="statForcePct"></div></div>
+        <div class="kpi"><div class="k">U.S. citizens</div><div class="v" id="statCitizen">0</div><div class="muted" id="statCitizenPct"></div></div>
+        <div class="kpi"><div class="k">Sensitive locations</div><div class="v" id="statSensitive">0</div><div class="muted" id="statSensitivePct"></div></div>
+      </div>
+
+      <div class="panel">
+        <h3>Why this score</h3>
+        <div class="muted" id="scoreExplanation">Score explanation unavailable.</div>
+        <ul class="drivers" id="topDrivers" style="margin-top:6px"></ul>
+      </div>
+
+      <div class="panel">
+        <h3>Incidents over time</h3>
+        <canvas id="timelineChart" height="120"></canvas>
+      </div>
+
+      <div class="panel">
+        <h3>Recent incidents</h3>
+        <div id="incidentsList"></div>
+      </div>
+    </div>
+      </div>
+    </div>
+
+    <div class="site-footer">
+      <div class="footer-row">
+        <a class="github-link" href="https://github.com/jacobarrio/protest-safety-checker" target="_blank" rel="noopener">View project on GitHub ↗</a>
+        <div class="source-logos">
+          <div class="source-logo"><span>🏛️ U.S. House Oversight</span></div>
+          <div class="source-logo"><span>🛡️ DHS / ICE Sources</span></div>
+          <div class="source-logo"><span>🔗 Open Data + Code</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allCities = [];
+    let chartInstance = null;
+
+    fetch('/api/cities').then(r => r.json()).then(c => allCities = c || []);
+    fetch('/api/last_updated').then(r => r.json()).then(data => {
+      document.getElementById('lastUpdated').textContent = data.display ? `Last updated: ${data.display}` : (data.time_str ? `Last updated: ${data.time_str}` : 'Last updated: unknown');
+    });
+    fetch('/api/data_summary').then(r => r.json()).then(d => {
+      if (d && d.total_records) {
+        const start = d.date_range?.start || 'unknown';
+        const end = d.date_range?.end || 'unknown';
+        document.getElementById('datasetSummary').textContent = `Dataset: ${d.total_records} records, ${d.unique_locations} locations (${start} → ${end})`;
+      } else {
+        document.getElementById('datasetSummary').textContent = 'Dataset summary unavailable';
+      }
+    });
+
+    const cityInput = document.getElementById('cityInput');
+    const autocompleteDiv = document.getElementById('autocomplete');
+
+    cityInput.addEventListener('input', function () {
+      const value = this.value.trim();
+      if (!value) return autocompleteDiv.style.display = 'none';
+      fetch(`/api/cities?q=${encodeURIComponent(value)}`).then(r => r.json()).then(matches => {
+        if (!Array.isArray(matches) || matches.length === 0) {
+          matches = allCities.filter(c => c.toLowerCase().includes(value.toLowerCase())).slice(0, 10);
         }
-        
-        // Close autocomplete on click outside
-        document.addEventListener('click', function(e) {
-            if (!cityInput.contains(e.target) && !autocompleteDiv.contains(e.target)) {
-                autocompleteDiv.style.display = 'none';
-            }
-        });
-        
-        function checkRisk() {
-            const city = cityInput.value.trim();
-            if (!city) return;
-            
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('error').classList.add('hidden');
-            document.getElementById('results').classList.add('hidden');
-            
-            fetch('/api/check', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({city: city})
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('loading').classList.add('hidden');
-                
-                if (data.error) {
-                    document.getElementById('error').textContent = data.error;
-                    document.getElementById('error').classList.remove('hidden');
-                    return;
-                }
-                
-                displayResults(data);
-            })
-            .catch(err => {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('error').textContent = 'Error loading data';
-                document.getElementById('error').classList.remove('hidden');
-            });
-        }
-        
-        function displayResults(data) {
-            // Risk card
-            const riskCard = document.getElementById('riskCard');
-            riskCard.className = 'risk-card ' + data.risk_level.toLowerCase();
-            document.getElementById('riskLevel').textContent = data.risk_level;
-            document.getElementById('riskScore').textContent = `Risk Score: ${data.risk_score}/100`;
-            
-            // Stats
-            document.getElementById('statTotal').textContent = data.total_incidents;
-            document.getElementById('statForce').textContent = data.use_of_force;
-            document.getElementById('statForcePct').textContent = `${data.use_of_force_pct}%`;
-            document.getElementById('statCitizen').textContent = data.us_citizens;
-            document.getElementById('statCitizenPct').textContent = `${data.us_citizens_pct}%`;
-            document.getElementById('statSensitive').textContent = data.sensitive_locations;
-            document.getElementById('statSensitivePct').textContent = `${data.sensitive_locations_pct}%`;
-            
-            // Timeline chart
-            if (data.timeline && data.timeline.length > 0) {
-                renderChart(data.timeline);
-            }
-            
-            // Incidents list
-            const incidentsList = document.getElementById('incidentsList');
-            incidentsList.innerHTML = data.recent_incidents.slice(0, 10).map(inc => `
-                <div class="incident-item">
-                    <div class="incident-date">${inc.date || 'Unknown date'}</div>
-                    <div class="incident-title">${inc.title || 'No title'}</div>
-                    <div class="incident-category">${inc.category || ''}</div>
-                </div>
-            `).join('');
-            
-            document.getElementById('results').classList.remove('hidden');
-        }
-        
-        function renderChart(timeline) {
-            const ctx = document.getElementById('timelineChart').getContext('2d');
-            
-            // Destroy existing chart
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
-            
-            // Sample dates if too many (show every 3rd date)
-            const shouldSample = timeline.length > 20;
-            const displayLabels = timeline.map((t, i) => {
-                if (shouldSample && i % 3 !== 0) return '';
-                // Format date: MM/DD
-                const parts = t.date.split('-');
-                return `${parts[1]}/${parts[2]}`;
-            });
-            
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: displayLabels,
-                    datasets: [{
-                        label: 'Incidents',
-                        data: timeline.map(t => t.count),
-                        backgroundColor: '#fff',
-                        borderColor: '#fff',
-                        borderWidth: 0,
-                        borderRadius: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: '#000',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: '#fff',
-                            borderWidth: 1,
-                            padding: 12,
-                            displayColors: false,
-                            callbacks: {
-                                title: function(context) {
-                                    return timeline[context[0].dataIndex].date;
-                                },
-                                label: function(context) {
-                                    return `${context.parsed.y} incident${context.parsed.y !== 1 ? 's' : ''}`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#999',
-                                font: {
-                                    size: 10,
-                                    weight: '600'
-                                },
-                                maxRotation: 0,
-                                autoSkip: false
-                            },
-                            grid: {
-                                color: '#222',
-                                drawBorder: false
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#999',
-                                font: {
-                                    size: 11,
-                                    weight: '600'
-                                },
-                                precision: 0
-                            },
-                            grid: {
-                                color: '#222',
-                                drawBorder: false
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Enter key to submit
-        cityInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                autocompleteDiv.style.display = 'none';
-                checkRisk();
-            }
-        });
-    </script>
+        if (matches.length === 0) return autocompleteDiv.style.display = 'none';
+        autocompleteDiv.innerHTML = matches.map(city => `<div class="autocomplete-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`).join('');
+        autocompleteDiv.style.display = 'block';
+      }).catch(() => autocompleteDiv.style.display = 'none');
+    });
+
+    function selectCity(city){ cityInput.value = city; autocompleteDiv.style.display='none'; checkRisk(); }
+    document.addEventListener('click', e => { if(!cityInput.contains(e.target) && !autocompleteDiv.contains(e.target)) autocompleteDiv.style.display='none'; });
+    cityInput.addEventListener('keypress', e => { if(e.key === 'Enter'){ autocompleteDiv.style.display='none'; checkRisk(); }});
+
+    function checkRisk(){
+      const city = cityInput.value.trim();
+      if(!city) return;
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('error').classList.add('hidden');
+      document.getElementById('results').classList.add('hidden');
+
+      fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({city})})
+      .then(r=>r.json())
+      .then(data=>{
+        document.getElementById('loading').classList.add('hidden');
+        if(data.error){ document.getElementById('error').textContent = data.error; document.getElementById('error').classList.remove('hidden'); return; }
+        displayResults(data);
+      })
+      .catch(()=>{
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').textContent='Error loading risk data';
+        document.getElementById('error').classList.remove('hidden');
+      });
+    }
+
+    function displayResults(data){
+      document.getElementById('riskLevel').textContent = `${data.risk_level} Risk`;
+      document.getElementById('riskScore').textContent = `Risk score: ${data.risk_score} / 100`;
+      document.getElementById('confidenceBadge').textContent = `Confidence: ${data.confidence || 'Low'}`;
+      document.getElementById('confidenceReason').textContent = data.confidence_reason || '';
+
+      document.getElementById('statTotal').textContent = data.total_incidents;
+      document.getElementById('statForce').textContent = data.use_of_force;
+      document.getElementById('statForcePct').textContent = `${data.use_of_force_pct}% of incidents`;
+      document.getElementById('statCitizen').textContent = data.us_citizens;
+      document.getElementById('statCitizenPct').textContent = `${data.us_citizens_pct}% of incidents`;
+      document.getElementById('statSensitive').textContent = data.sensitive_locations;
+      document.getElementById('statSensitivePct').textContent = `${data.sensitive_locations_pct}% of incidents`;
+
+      document.getElementById('scoreExplanation').textContent = data.score_explanation || 'Score explanation unavailable.';
+      document.getElementById('topDrivers').innerHTML = (data.top_drivers || []).map(d => `<li>${d.name}: <strong>${d.score}</strong></li>`).join('') || '<li>No top drivers available</li>';
+
+      if (data.timeline && data.timeline.length) renderChart(data.timeline);
+      document.getElementById('incidentsList').innerHTML = (data.recent_incidents || []).slice(0,10).map(inc => `
+        <div class="incident"><div class="d">${inc.date || 'Unknown date'}</div><div class="t">${inc.title || 'No title available'}</div><div class="c">${inc.category || ''}</div></div>
+      `).join('');
+
+      document.getElementById('results').classList.remove('hidden');
+    }
+
+    function renderChart(timeline){
+      const ctx = document.getElementById('timelineChart').getContext('2d');
+      if(chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx,{type:'line',data:{labels:timeline.map(x=>x.date),datasets:[{data:timeline.map(x=>x.count),borderColor:'#1e63f3',backgroundColor:'rgba(30,99,243,.12)',fill:true,tension:.25,pointRadius:2}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5f7299',maxTicksLimit:8},grid:{color:'#ebf1fb'}},y:{beginAtZero:true,ticks:{color:'#5f7299',precision:0},grid:{color:'#ebf1fb'}}}}});
+    }
+  </script>
 </body>
 </html>

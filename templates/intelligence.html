@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ICE Risk Tracker — Intelligence Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Archivo:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:#eef1f7;color:#10254d}
+    .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 44px}
+    a{color:#1e63f3;text-decoration:none} a:hover{text-decoration:underline}
+
+    .hero{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;background:#04084f;color:#f4f7ff;border-radius:16px;padding:16px 18px}
+    .title{font-family:"DM Serif Display",serif;font-size:2.4rem;line-height:1.06;font-weight:400;letter-spacing:-.01em}
+    .sub{color:#cad6ff;margin-top:8px;font-family:Archivo,sans-serif;font-size:.9rem;letter-spacing:.02em}
+
+    .layout{display:grid;grid-template-columns:250px 1fr;gap:14px;align-items:start;margin-top:14px}
+    .sidebar{background:#f7f9ff;border:1px solid #cad6ee;border-radius:14px;padding:14px;position:sticky;top:14px}
+    .sidebar-title{font-family:Archivo,sans-serif;font-size:.76rem;color:#405a89;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+    .side-link{display:block;padding:9px 10px;border-radius:10px;color:#0f2d66;text-decoration:none;font-family:Archivo,sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.03em;text-transform:uppercase;margin-bottom:4px}
+    .side-link:hover{background:#edf3ff}
+
+    .card{box-shadow:0 6px 18px rgba(18,48,107,.06);background:#f7f9ff;border:1px solid #cad6ee;border-radius:16px;padding:16px;margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .stat{background:#f1f5ff;border:1px solid #d0dcf2;border-radius:12px;padding:14px}
+    .k{font-size:.75rem;color:#5f7299;text-transform:uppercase;letter-spacing:.06em}
+    .v{font-size:1.6rem;font-weight:800;margin-top:6px;color:#12306b}
+
+    .section{font-family:Archivo,sans-serif;font-size:1.02rem;font-weight:700;margin-bottom:10px;color:#12306b}
+    .note{color:#2d4677;line-height:1.6}
+    .warn{background:#3a0f19;border:1px solid #7f1d1d;color:#ffd7dc;border-radius:12px;padding:10px;margin-top:10px}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #d6e0f3;color:#19366f}
+    th{color:#315ca8;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+
+    .incident{border-left:3px solid #3b70ef;background:#edf3ff;padding:10px 12px;border-radius:10px;margin-bottom:10px}
+    .incident .d{font-size:.8rem;color:#4f6693}
+    .incident .t{font-weight:600;margin-top:4px;color:#15356d}
+    .incident .m{font-size:.84rem;color:#35517f;margin-top:6px}
+    .feed-meta{color:#4f6693;font-size:.86rem;margin-bottom:8px}
+
+    .site-footer{margin-top:4px;background:#f1f5ff;border:1px solid #d0dcf2;border-radius:14px;padding:14px}
+    .footer-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+    .source-logos{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .source-logo{display:flex;align-items:center;gap:8px;border:1px solid #cad6ef;background:#f4f7ff;color:#244a92;padding:6px 9px;border-radius:12px}
+    .source-logo span{font-size:.78rem;font-weight:700}
+    .github-link{color:#1e63f3;text-decoration:none;font-weight:700}
+
+    @media (max-width:980px){.layout{grid-template-columns:1fr}.sidebar{position:static}.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:620px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <div class="title">ICE Risk Tracker — Intelligence Dashboard</div>
+        <div class="sub">Protest Safety Checker intelligence layer: facilities, spending, signals, and live feed.</div>
+      </div>
+      <div><a style="color:#dbeafe" href="/">← Main checker</a></div>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-title">Categories</div>
+        <a class="side-link" href="#method">How to read this</a>
+        <a class="side-link" href="#spending">Spending analysis</a>
+        <a class="side-link" href="#category-breakdown">Category split</a>
+        <a class="side-link" href="#confidence-breakdown">Confidence tags</a>
+        <a class="side-link" href="#facility-breakdown">Facility mapping</a>
+        <a class="side-link" href="#locations">Detention locations</a>
+        <a class="side-link" href="#signals">Signal locations</a>
+        <a class="side-link" href="#feed">Live feed</a>
+      </aside>
+
+      <main>
+        <div class="card grid">
+          <div class="stat"><div class="k">Detention-related records</div><div class="v">{{ detention.total_detention_related }}</div></div>
+          <div class="stat"><div class="k">Possible black-site signals</div><div class="v">{{ black_sites.total_signals }}</div></div>
+          <div class="stat"><div class="k">Dataset records</div><div class="v">{{ summary.total_records or 'N/A' }}</div></div>
+          <div class="stat"><div class="k">Data updated</div><div class="v" style="font-size:1.1rem">{{ last_updated.display or last_updated.time_str or 'Unknown' }}</div></div>
+        </div>
+
+        <div class="card" id="method">
+          <div class="section">How to read this page (plain English)</div>
+          <div class="note" style="margin-bottom:10px;">
+            We use three confidence tags so you can judge reliability in seconds:
+          </div>
+          <table>
+            <thead><tr><th>Label</th><th>What it means</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Verified</strong></td><td>We found a direct record (official contract/award text) that clearly supports the claim.</td></tr>
+              <tr><td><strong>Partial</strong></td><td>The spending record is real, but the exact facility/program mapping is not fully explicit yet.</td></tr>
+              <tr><td><strong>Inference</strong></td><td>Pattern-based signal only (useful lead, not proof).</td></tr>
+            </tbody>
+          </table>
+          <div class="warn" style="margin-top:10px;">Quick rule: use <strong>Verified</strong> for strong claims, treat <strong>Partial</strong> as provisional, and treat <strong>Inference</strong> as a lead to investigate.</div>
+        </div>
+
+        <div class="card" id="spending">
+          <div class="section">DHS spending: last 12 months vs last decade</div>
+          {% if not spending.available %}
+          <div class="warn">{{ spending.message }}</div>
+          <div class="note" style="margin-top:8px">To enable this, add <code>data/dhs_site_spending.csv</code> with columns: <code>date,site,amount_usd,category,verification</code>.</div>
+          {% else %}
+          <div class="grid" style="margin-bottom:10px;grid-template-columns:1fr 1fr;">
+            <div class="stat"><div class="k">Total spend in loaded file</div><div class="v">${{ '{:,.0f}'.format(spending.total_usd) }}</div></div>
+          </div>
+          <canvas id="monthlyChart" height="120"></canvas>
+          <canvas id="yearlyChart" height="120" style="margin-top:14px"></canvas>
+          {% endif %}
+        </div>
+
+
+        <div class="card" id="category-breakdown">
+          <div class="section">Spending split by mapped category</div>
+          <table>
+            <thead><tr><th>Category</th><th>Total amount (USD)</th></tr></thead>
+            <tbody>
+              {% for row in spending.by_category[:12] %}
+              <tr><td>{{ row.category }}</td><td>${{ '{:,.0f}'.format(row.amount_usd) }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" id="confidence-breakdown">
+          <div class="section">Confidence tags on spend rows</div>
+          <table>
+            <thead><tr><th>Confidence</th><th>Rows</th></tr></thead>
+            <tbody>
+              {% for row in spending.confidence_counts %}
+              <tr><td>{{ row.confidence }}</td><td>{{ row.count }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="note" style="margin-top:8px">[Verified] direct contract record + clear program signal. [Partial] contract record with inferred facility/program mapping.</div>
+        </div>
+
+        <div class="card" id="facility-breakdown">
+          <div class="section">Top mapped facilities/programs by spend</div>
+          <table>
+            <thead><tr><th>Facility / Program</th><th>Total amount (USD)</th></tr></thead>
+            <tbody>
+              {% for row in spending.by_facility[:12] %}
+              <tr><td>{{ row.facility_name }}</td><td>${{ '{:,.0f}'.format(row.amount_usd) }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card" id="locations">
+          <div class="section">Top detention-related locations</div>
+          <table>
+            <thead><tr><th>Location</th><th>Incident count</th></tr></thead>
+            <tbody>
+              {% for row in detention.locations[:20] %}
+              <tr><td>{{ row.location }}</td><td>{{ row.incident_count }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" id="signals">
+          <div class="section">Possible undisclosed-site signal locations [Inference]</div>
+          <table>
+            <thead><tr><th>Location</th><th>Signal count</th></tr></thead>
+            <tbody>
+              {% for row in black_sites.locations[:20] %}
+              <tr><td>{{ row.location }}</td><td>{{ row.signal_count }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" id="feed">
+          <div class="section">Auto-refresh incident feed (60s)</div>
+          <div class="feed-meta" id="feedMeta">Loading latest feed...</div>
+          <div id="feedList"></div>
+        </div>
+
+        <div class="site-footer">
+          <div class="footer-row">
+            <a class="github-link" href="https://github.com/jacobarrio/protest-safety-checker" target="_blank" rel="noopener">View project on GitHub ↗</a>
+            <div class="source-logos">
+              <div class="source-logo"><span>🏛️ House Oversight</span></div>
+              <div class="source-logo"><span>🛡️ DHS / ICE</span></div>
+              <div class="source-logo"><span>🔗 Open Data + Code</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    {% if spending.available %}
+    const monthly = {{ spending.last_12_months|tojson }};
+    const yearly = {{ spending.last_10_years|tojson }};
+    new Chart(document.getElementById('monthlyChart').getContext('2d'), {
+      type: 'bar',
+      data: { labels: monthly.map(x => x.period), datasets: [{ data: monthly.map(x => x.amount_usd), backgroundColor: '#4c75ec' }] },
+      options: { plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#5f7299'}}, y:{ticks:{color:'#5f7299'}}} }
+    });
+    new Chart(document.getElementById('yearlyChart').getContext('2d'), {
+      type: 'line',
+      data: { labels: yearly.map(x => x.year), datasets: [{ data: yearly.map(x => x.amount_usd), borderColor: '#2d62e8', backgroundColor:'rgba(45,98,232,.12)', fill:true, tension:.25 }] },
+      options: { plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#5f7299'}}, y:{ticks:{color:'#5f7299'}}} }
+    });
+    {% endif %}
+
+    async function refreshFeed() {
+      try {
+        const res = await fetch('/api/live-feed?limit=20');
+        const data = await res.json();
+        document.getElementById('feedMeta').textContent = `Showing ${data.length} newest incidents • auto-refresh every 60s`;
+        document.getElementById('feedList').innerHTML = data.map(item => `
+          <div class="incident">
+            <div class="d">${item.date || 'Unknown date'} — ${item.location || 'Unknown location'}</div>
+            <div class="t">${item.title || 'No title'}</div>
+            <div class="m">${item.category || ''} ${item.source_url ? `• <a href="${item.source_url}" target="_blank" rel="noopener">source</a>` : ''}</div>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('feedMeta').textContent = 'Feed unavailable right now.';
+      }
+    }
+    refreshFeed();
+    setInterval(refreshFeed, 60000);
+  </script>
+</body>
+</html>
