@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 import os
 from difflib import SequenceMatcher, get_close_matches
+from collections import Counter
 
 def normalize_city_input(city_input):
     """
@@ -505,6 +506,25 @@ def get_spending_analytics(spend_csv_path='data/dhs_site_spending.csv'):
             'last_10_years': [],
             'by_site': []
         }
+
+
+def get_us_state_incident_counts(csv_path='protest_data_oversight.csv'):
+    """Aggregate incidents by US state abbreviation parsed from location strings like 'City, ST'."""
+    try:
+        df = _read_incident_csv(csv_path)
+        states = []
+        for raw in df.get('location', pd.Series(dtype=str)).astype(str):
+            parts = [p.strip() for p in raw.split(',')]
+            if not parts:
+                continue
+            tail = parts[-1].upper()
+            if re.fullmatch(r'[A-Z]{2}', tail):
+                states.append(tail)
+
+        counts = Counter(states)
+        return [{"state": s, "count": int(c)} for s, c in sorted(counts.items())]
+    except Exception:
+        return []
 
 
 def get_risk_for_city(city_input, csv_path='protest_data_oversight.csv'):

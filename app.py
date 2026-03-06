@@ -11,6 +11,7 @@ from calculator import (
     get_black_site_signals,
     get_spending_analytics,
     get_live_feed,
+    get_us_state_incident_counts,
 )
 import pandas as pd
 
@@ -124,6 +125,11 @@ def api_timeline():
     city = request.args.get('city', None)
     timeline = get_timeline_data(city)
     return jsonify(timeline)
+
+@app.route('/api/us-map')
+def api_us_map():
+    """US state-level incident footprint for homepage map."""
+    return jsonify(get_us_state_incident_counts())
 
 @app.route('/health', methods=['GET'])
 def health():

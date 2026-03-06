@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ICE Risk Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Archivo:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -46,6 +47,8 @@
     .v{font-size:1.4rem;font-weight:800;margin-top:6px;color:#12306b}
 
     .panel{box-shadow:0 6px 18px rgba(18,48,107,0.06);background:#fff;border:1px solid #cfdaf0;border-radius:14px;padding:14px;margin-top:12px}
+    .map-panel{min-height:460px}
+    #usMap{width:100%;height:420px}
     .panel h3{font-size:1rem;margin-bottom:8px;color:#11316d}
     .muted{color:#5f7299;font-size:.9rem}
 
@@ -123,6 +126,12 @@
       </div>
     </div>
 
+    <div class="panel map-panel">
+      <h3>National Incident Footprint</h3>
+      <div class="muted" style="margin-bottom:8px">State-level count from current dataset.</div>
+      <div id="usMap"></div>
+    </div>
+
     <div id="loading" class="loading hidden">Analyzing incidents…</div>
     <div id="error" class="error hidden"></div>
 
@@ -195,6 +204,9 @@
         document.getElementById('datasetSummary').textContent = 'Dataset summary unavailable';
       }
     });
+    fetch('/api/us-map').then(r => r.json()).then(renderUsMap).catch(() => {
+      document.getElementById('usMap').innerHTML = '<div class="muted">Map unavailable right now.</div>';
+    });
 
     const cityInput = document.getElementById('cityInput');
     const autocompleteDiv = document.getElementById('autocomplete');
@@ -215,6 +227,31 @@
     function selectCity(city){ cityInput.value = city; autocompleteDiv.style.display='none'; checkRisk(); }
     document.addEventListener('click', e => { if(!cityInput.contains(e.target) && !autocompleteDiv.contains(e.target)) autocompleteDiv.style.display='none'; });
     cityInput.addEventListener('keypress', e => { if(e.key === 'Enter'){ autocompleteDiv.style.display='none'; checkRisk(); }});
+
+    function renderUsMap(rows){
+      if (!Array.isArray(rows) || rows.length === 0) {
+        document.getElementById('usMap').innerHTML = '<div class="muted">No map data loaded.</div>';
+        return;
+      }
+      const states = rows.map(r => r.state);
+      const counts = rows.map(r => r.count);
+
+      Plotly.newPlot('usMap', [{
+        type: 'choropleth',
+        locationmode: 'USA-states',
+        locations: states,
+        z: counts,
+        colorscale: 'Reds',
+        marker: {line: {color: '#ffffff', width: 0.7}},
+        colorbar: {title: 'Incidents'},
+        hovertemplate: '%{location}: %{z} incidents<extra></extra>'
+      }], {
+        geo: {scope: 'usa', projection: {type: 'albers usa'}, bgcolor: 'rgba(0,0,0,0)'},
+        margin: {l: 0, r: 0, t: 0, b: 0},
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)'
+      }, {displayModeBar: false, responsive: true});
+    }
 
     function checkRisk(){
       const city = cityInput.value.trim();
