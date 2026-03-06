@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ICE Risk Tracker</title>
+  <title>ICE Risk Intelligence — Protest Safety Checker</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,9 +28,11 @@
     .side-link{display:block;padding:9px 10px;border-radius:10px;color:#0f2d66;text-decoration:none;font-family:Archivo,sans-serif;font-weight:700;font-size:.88rem;letter-spacing:.02em;text-transform:uppercase;margin-bottom:4px}
     .side-link:hover{background:#eef4ff}
 
-    .hero{background:#04084f;border:1px solid #1f2a77;border-radius:16px;padding:24px}
-    .title{font-family:"DM Serif Display", serif;font-size:3rem;line-height:1.05;font-weight:400;letter-spacing:-0.01em;color:#f4f7ff;text-align:center}
-    .sub{margin-top:10px;color:#c5d3ff;text-align:center;font-family:Archivo,sans-serif;font-size:.92rem;letter-spacing:.03em;text-transform:uppercase}
+    .hero{background:linear-gradient(140deg,#04084f 0%,#0e1f6e 60%,#173687 100%);border:1px solid #2a3e8d;border-radius:16px;padding:26px;box-shadow:0 10px 26px rgba(8,20,74,.25)}
+    .title{font-family:"DM Serif Display", serif;font-size:3.2rem;line-height:1.02;font-weight:400;letter-spacing:-0.015em;color:#f8fbff;text-align:center;text-wrap:balance}
+    .sub{margin-top:10px;color:#d3defe;text-align:center;font-family:Archivo,sans-serif;font-size:.86rem;letter-spacing:.09em;text-transform:uppercase}
+    .hero-meta{margin-top:12px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+    .hero-pill{font-size:.72rem;font-family:Archivo,sans-serif;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:6px 10px;border-radius:999px;color:#e7efff;letter-spacing:.04em;text-transform:uppercase}
 
     .search-card{margin-top:18px;background:#eef2fb;border:1px solid #c8d3ec;border-radius:14px;padding:14px;position:relative}
     .search-row{display:grid;grid-template-columns:1fr auto;gap:10px}
@@ -112,6 +115,11 @@
     <div class="hero" id="search">
       <div class="title">ICE Activity Risk Intelligence</div>
       <div class="sub">Professional incident risk lookup with transparent scoring and confidence labels.</div>
+      <div class="hero-meta">
+        <span class="hero-pill">v0.2 Interface</span>
+        <span class="hero-pill">Public-source dataset</span>
+        <span class="hero-pill">Transparent scoring</span>
+      </div>
 
       <div class="search-card">
         <div class="search-row">
@@ -127,9 +135,28 @@
     </div>
 
     <div class="panel map-panel">
-      <h3>National Incident Footprint</h3>
-      <div class="muted" style="margin-bottom:8px">State-level count from current dataset.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <h3>National Incident Footprint</h3>
+          <div class="muted" style="margin-top:3px">Animated state-level map with 30-day trend deltas.</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button id="metricTotal" style="padding:8px 12px;font-size:.75rem" onclick="setMapMetric('count')">Total</button>
+          <button id="metricRecent" style="padding:8px 12px;font-size:.75rem;background:#143f9f" onclick="setMapMetric('recent30')">Last 30d</button>
+          <button id="metricDelta" style="padding:8px 12px;font-size:.75rem;background:#0f2d66" onclick="setMapMetric('delta30')">Δ 30d</button>
+        </div>
+      </div>
       <div id="usMap"></div>
+      <div class="kpis" style="margin-top:10px">
+        <div class="kpi"><div class="k">States in dataset</div><div class="v" id="mapStates">0</div></div>
+        <div class="kpi"><div class="k">Total incidents</div><div class="v" id="mapIncidents">0</div></div>
+        <div class="kpi"><div class="k">Recent 30d</div><div class="v" id="mapRecent">0</div></div>
+        <div class="kpi"><div class="k">Prev 30d</div><div class="v" id="mapPrev">0</div></div>
+      </div>
+      <div class="panel" style="margin-top:10px;padding:10px;background:#f8fbff">
+        <h3 style="margin-bottom:6px">Top moving states (30d)</h3>
+        <ul id="topMovers" class="drivers"></ul>
+      </div>
     </div>
 
     <div id="loading" class="loading hidden">Analyzing incidents…</div>
@@ -190,6 +217,8 @@
   <script>
     let allCities = [];
     let chartInstance = null;
+    let usMapData = [];
+    let currentMapMetric = 'recent30';
 
     fetch('/api/cities').then(r => r.json()).then(c => allCities = c || []);
     fetch('/api/last_updated').then(r => r.json()).then(data => {
@@ -204,7 +233,11 @@
         document.getElementById('datasetSummary').textContent = 'Dataset summary unavailable';
       }
     });
-    fetch('/api/us-map').then(r => r.json()).then(renderUsMap).catch(() => {
+    fetch('/api/us-map').then(r => r.json()).then(payload => {
+      usMapData = payload.states || [];
+      renderMapSummary(payload.summary || {});
+      renderUsMap();
+    }).catch(() => {
       document.getElementById('usMap').innerHTML = '<div class="muted">Map unavailable right now.</div>';
     });
 
@@ -228,29 +261,70 @@
     document.addEventListener('click', e => { if(!cityInput.contains(e.target) && !autocompleteDiv.contains(e.target)) autocompleteDiv.style.display='none'; });
     cityInput.addEventListener('keypress', e => { if(e.key === 'Enter'){ autocompleteDiv.style.display='none'; checkRisk(); }});
 
-    function renderUsMap(rows){
+    function renderMapSummary(summary){
+      document.getElementById('mapStates').textContent = summary.totalStates || 0;
+      document.getElementById('mapIncidents').textContent = summary.totalIncidents || 0;
+      document.getElementById('mapRecent').textContent = summary.recent30 || 0;
+      document.getElementById('mapPrev').textContent = summary.prev30 || 0;
+
+      const movers = summary.topMovers || [];
+      document.getElementById('topMovers').innerHTML = movers.length
+        ? movers.map(m => `<li>${m.state}: <strong>${m.delta30 >= 0 ? '+' : ''}${m.delta30}</strong> (recent ${m.recent30}, prev ${m.prev30})</li>`).join('')
+        : '<li>No trend deltas available.</li>';
+    }
+
+    function setMapMetric(metric){
+      currentMapMetric = metric;
+      document.getElementById('metricTotal').style.background = metric === 'count' ? '#2d62e8' : '#143f9f';
+      document.getElementById('metricRecent').style.background = metric === 'recent30' ? '#2d62e8' : '#143f9f';
+      document.getElementById('metricDelta').style.background = metric === 'delta30' ? '#2d62e8' : '#0f2d66';
+      renderUsMap();
+    }
+
+    function renderUsMap(){
+      const rows = usMapData;
       if (!Array.isArray(rows) || rows.length === 0) {
         document.getElementById('usMap').innerHTML = '<div class="muted">No map data loaded.</div>';
         return;
       }
-      const states = rows.map(r => r.state);
-      const counts = rows.map(r => r.count);
 
-      Plotly.newPlot('usMap', [{
+      const labels = {count: 'Total incidents', recent30: 'Last 30d', delta30: 'Δ 30d'};
+      const states = rows.map(r => r.state);
+      const z = rows.map(r => Number(r[currentMapMetric] || 0));
+      const absMax = Math.max(...z.map(v => Math.abs(v)), 1);
+      const colorscale = currentMapMetric === 'delta30'
+        ? [[0, '#1d4ed8'], [0.5, '#f8fafc'], [1, '#dc2626']]
+        : 'Reds';
+
+      const trace = {
         type: 'choropleth',
         locationmode: 'USA-states',
         locations: states,
-        z: counts,
-        colorscale: 'Reds',
+        z,
+        zmin: currentMapMetric === 'delta30' ? -absMax : undefined,
+        zmax: currentMapMetric === 'delta30' ? absMax : undefined,
+        colorscale,
         marker: {line: {color: '#ffffff', width: 0.7}},
-        colorbar: {title: 'Incidents'},
-        hovertemplate: '%{location}: %{z} incidents<extra></extra>'
-      }], {
+        colorbar: {title: labels[currentMapMetric]},
+        customdata: rows.map(r => [r.count, r.recent30, r.prev30, r.delta30]),
+        hovertemplate: '%{location}<br>Total: %{customdata[0]}<br>Last 30d: %{customdata[1]}<br>Prev 30d: %{customdata[2]}<br>Δ 30d: %{customdata[3]}<extra></extra>'
+      };
+
+      const layout = {
         geo: {scope: 'usa', projection: {type: 'albers usa'}, bgcolor: 'rgba(0,0,0,0)'},
         margin: {l: 0, r: 0, t: 0, b: 0},
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)'
-      }, {displayModeBar: false, responsive: true});
+      };
+
+      const config = {displayModeBar: false, responsive: true};
+      const mapEl = document.getElementById('usMap');
+      if (mapEl.dataset.inited === '1') {
+        Plotly.animate('usMap', {data: [trace]}, {transition: {duration: 500, easing: 'cubic-in-out'}, frame: {duration: 500, redraw: true}});
+      } else {
+        Plotly.newPlot('usMap', [trace], layout, config);
+        mapEl.dataset.inited = '1';
+      }
     }
 
     function checkRisk(){

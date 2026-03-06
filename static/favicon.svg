@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ICE Risk Intelligence">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#0b122f"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#g)"/>
+  <path d="M32 8l18 7v14c0 12-7.3 19.8-18 23-10.7-3.2-18-11-18-23V15l18-7z" fill="#e6eefc" opacity=".95"/>
+  <path d="M32 13l13 5v11c0 8.2-4.7 13.8-13 16.7-8.3-2.9-13-8.5-13-16.7V18l13-5z" fill="#1d4ed8"/>
+  <path d="M28 23h8v8h8v8h-8v8h-8v-8h-8v-8h8z" fill="#fff"/>
+</svg>

@@ -509,22 +509,58 @@ def get_spending_analytics(spend_csv_path='data/dhs_site_spending.csv'):
 
 
 def get_us_state_incident_counts(csv_path='protest_data_oversight.csv'):
-    """Aggregate incidents by US state abbreviation parsed from location strings like 'City, ST'."""
+    """Aggregate incidents by US state abbreviation with trend windows for map dynamics."""
     try:
         df = _read_incident_csv(csv_path)
-        states = []
-        for raw in df.get('location', pd.Series(dtype=str)).astype(str):
-            parts = [p.strip() for p in raw.split(',')]
-            if not parts:
-                continue
-            tail = parts[-1].upper()
-            if re.fullmatch(r'[A-Z]{2}', tail):
-                states.append(tail)
+        df = df.copy()
+        df['date_parsed'] = pd.to_datetime(df['date'], errors='coerce')
 
-        counts = Counter(states)
-        return [{"state": s, "count": int(c)} for s, c in sorted(counts.items())]
+        def extract_state(raw):
+            parts = [p.strip() for p in str(raw).split(',')]
+            tail = parts[-1].upper() if parts else ''
+            return tail if re.fullmatch(r'[A-Z]{2}', tail) else None
+
+        df['state'] = df.get('location', pd.Series(dtype=str)).apply(extract_state)
+        df = df[df['state'].notna()]
+        if df.empty:
+            return {"states": [], "summary": {"totalStates": 0, "totalIncidents": 0}}
+
+        now = pd.Timestamp.now()
+        recent_start = now - pd.Timedelta(days=30)
+        prev_start = now - pd.Timedelta(days=60)
+
+        total_counts = Counter(df['state'])
+        recent_df = df[df['date_parsed'] >= recent_start]
+        prev_df = df[(df['date_parsed'] >= prev_start) & (df['date_parsed'] < recent_start)]
+        recent_counts = Counter(recent_df['state'])
+        prev_counts = Counter(prev_df['state'])
+
+        states = []
+        for state, total in sorted(total_counts.items()):
+            recent = int(recent_counts.get(state, 0))
+            prev = int(prev_counts.get(state, 0))
+            delta = recent - prev
+            states.append({
+                "state": state,
+                "count": int(total),
+                "recent30": recent,
+                "prev30": prev,
+                "delta30": delta,
+            })
+
+        movers = sorted(states, key=lambda x: x['delta30'], reverse=True)[:8]
+        return {
+            "states": states,
+            "summary": {
+                "totalStates": len(states),
+                "totalIncidents": int(len(df)),
+                "recent30": int(len(recent_df)),
+                "prev30": int(len(prev_df)),
+                "topMovers": movers,
+            }
+        }
     except Exception:
-        return []
+        return {"states": [], "summary": {"totalStates": 0, "totalIncidents": 0}}
 
 
 def get_risk_for_city(city_input, csv_path='protest_data_oversight.csv'):
