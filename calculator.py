@@ -610,12 +610,15 @@ def get_detention_death_tracker(csv_path='protest_data_oversight.csv'):
                 if pd.isna(v):
                     row[k] = None
 
+        alert_level = 'high' if len(last14) >= 3 else ('elevated' if len(last14) >= 1 else 'baseline')
+
         return {
             'total': int(len(hits)),
             'last14': int(len(last14)),
             'last30': int(len(last30)),
             'locations': by_location,
             'recent': recent,
+            'alertLevel': alert_level,
             'note': 'Keyword-based signal from available oversight data; validate each incident before publication.'
         }
     except Exception:
@@ -632,21 +635,30 @@ def get_contractor_tracker_data():
                 'segment': 'Detention operations / monitoring',
                 'moneyVector': 'Facility ops + BI monitoring revenue',
                 'conflictFlags': ['Lobbying intensity', 'Revolving-door risk', 'Detention condition allegations'],
-                'riskLevel': 'High'
+                'riskLevel': 'High',
+                'contractEvents': [
+                    {'label': 'Reported 5-year ISAP/monitoring cycle via BI', 'value': '$2.2B', 'year': '2020', 'source': 'OpenSecrets reporting'},
+                ]
             },
             {
                 'name': 'CoreCivic',
                 'segment': 'Detention operations',
                 'moneyVector': 'Bed capacity expansion + reopened facilities',
                 'conflictFlags': ['Lobbying exposure', 'Renewal despite incident allegations'],
-                'riskLevel': 'High'
+                'riskLevel': 'High',
+                'contractEvents': [
+                    {'label': 'Reactivation/reopen opportunities linked to ICE capacity growth', 'value': 'Multi-site', 'year': '2025-2026', 'source': 'Company earnings calls / reporting'}
+                ]
             },
             {
                 'name': 'BI Incorporated (GEO subsidiary)',
                 'segment': 'ATD/electronic monitoring',
                 'moneyVector': 'Per-person recurring supervision revenue',
                 'conflictFlags': ['Surveillance expansion incentives', 'Parent-company overlap'],
-                'riskLevel': 'High'
+                'riskLevel': 'High',
+                'contractEvents': [
+                    {'label': 'ATD/ISAP contract as publicly reported', 'value': '$2.2B', 'year': '2020', 'source': 'OpenSecrets reporting'}
+                ]
             },
             {
                 'name': 'Akima / affiliates',

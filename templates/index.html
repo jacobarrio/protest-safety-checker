@@ -68,6 +68,9 @@
     .risk-high{color:#ff9cae;font-weight:700}
     .risk-medium{color:#ffd08a;font-weight:700}
     .risk-low{color:#8ef0b8;font-weight:700}
+    .alert-high{color:#ff9cae;font-weight:700}
+    .alert-elevated{color:#ffd08a;font-weight:700}
+    .alert-baseline{color:#8ef0b8;font-weight:700}
 
     .site-footer{margin-top:14px;background:rgba(8,15,37,.64);border:1px solid rgba(140,170,255,.24);border-radius:14px;padding:14px}
     .footer-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
@@ -179,6 +182,10 @@
       <div class="panel" style="margin-top:10px;padding:10px;background:rgba(6,12,28,.72)">
         <h3 style="margin-bottom:6px">Top locations</h3>
         <ul id="deathLocations" class="drivers"></ul>
+      </div>
+      <div class="panel" style="margin-top:10px;padding:10px;background:rgba(6,12,28,.72)">
+        <h3 style="margin-bottom:6px">Recent flagged death incidents</h3>
+        <div id="deathRecent"></div>
       </div>
     </div>
 
@@ -313,12 +320,18 @@
       document.getElementById('death14').textContent = data.last14 || 0;
       document.getElementById('death30').textContent = data.last30 || 0;
       document.getElementById('deathLocCount').textContent = (data.locations || []).length;
-      document.getElementById('deathTrackerNote').textContent = data.note || 'Death tracker loaded.';
+      const level = data.alertLevel || 'baseline';
+      document.getElementById('deathTrackerNote').innerHTML = `<span class="alert-${level}">Alert: ${level.toUpperCase()}</span> · ${data.note || 'Death tracker loaded.'}`;
 
       const locs = data.locations || [];
       document.getElementById('deathLocations').innerHTML = locs.length
         ? locs.map(l => `<li>${l.location || 'Unknown location'}: <strong>${l.count}</strong></li>`).join('')
         : '<li>No flagged locations yet.</li>';
+
+      const recent = data.recent || [];
+      document.getElementById('deathRecent').innerHTML = recent.length
+        ? recent.slice(0, 8).map(r => `<div class="incident"><div class="d">${r.date || 'Unknown date'} · ${r.location || 'Unknown location'}</div><div class="t">${r.title || 'No title'}</div><div class="c">${r.category || ''}</div>${r.source_url ? `<div class="d" style="margin-top:5px"><a class="github-link" href="${r.source_url}" target="_blank" rel="noopener">Source ↗</a></div>` : ''}</div>`).join('')
+        : '<div class="muted">No recent flagged incidents.</div>';
     }
 
     function renderContractorTracker(data){
@@ -327,6 +340,7 @@
       document.getElementById('contractorList').innerHTML = contractors.map(c => {
         const riskClass = `risk-${String(c.riskLevel || '').toLowerCase()}`;
         const flags = (c.conflictFlags || []).map(f => `<span class="hero-pill" style="font-size:.62rem">${f}</span>`).join(' ');
+        const events = (c.contractEvents || []).map(e => `<li>${e.year}: <strong>${e.value}</strong> — ${e.label} <span class="muted">(${e.source})</span></li>`).join('');
         return `<div class="contractor-card">
           <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
             <div style="font-weight:800;color:#f1f6ff">${c.name}</div>
@@ -335,6 +349,7 @@
           <div class="muted" style="margin-top:4px">${c.segment || ''}</div>
           <div style="margin-top:6px;color:#d6e3ff"><strong>Money vector:</strong> ${c.moneyVector || 'N/A'}</div>
           <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${flags}</div>
+          ${events ? `<div style="margin-top:8px"><div class="k" style="font-size:.62rem">Reported contract timeline</div><ul class="drivers">${events}</ul></div>` : ''}
         </div>`;
       }).join('') || '<div class="muted">No contractor rows loaded.</div>';
     }
