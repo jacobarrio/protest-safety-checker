@@ -563,6 +563,116 @@ def get_us_state_incident_counts(csv_path='protest_data_oversight.csv'):
         return {"states": [], "summary": {"totalStates": 0, "totalIncidents": 0}}
 
 
+def get_detention_death_tracker(csv_path='protest_data_oversight.csv'):
+    """Track deaths/fatal incidents linked to detention context."""
+    try:
+        df = _read_incident_csv(csv_path).copy()
+        df['date_parsed'] = pd.to_datetime(df['date'], errors='coerce')
+
+        detention_pattern = r'detention|detained|detain|facility|jail|custody|holding|processing center|ice'
+        death_pattern = r'death|died|dead|killed|fatal|homicide|chok|asphyx|suicide|medical emergency'
+
+        mask = (
+            (df['title'].astype(str).str.contains(death_pattern, case=False, na=False) |
+             df['category'].astype(str).str.contains(death_pattern, case=False, na=False))
+            &
+            (df['title'].astype(str).str.contains(detention_pattern, case=False, na=False) |
+             df['category'].astype(str).str.contains(detention_pattern, case=False, na=False))
+        )
+
+        hits = df[mask].copy()
+        if hits.empty:
+            return {
+                'total': 0,
+                'last14': 0,
+                'last30': 0,
+                'locations': [],
+                'recent': [],
+                'note': 'No detention-linked death incidents matched current keywords in dataset.'
+            }
+
+        now = pd.Timestamp.now()
+        last14 = hits[hits['date_parsed'] >= (now - pd.Timedelta(days=14))]
+        last30 = hits[hits['date_parsed'] >= (now - pd.Timedelta(days=30))]
+
+        by_location = (
+            hits.groupby('location', dropna=False)
+            .size()
+            .reset_index(name='count')
+            .sort_values('count', ascending=False)
+            .head(12)
+            .to_dict('records')
+        )
+
+        recent = hits.sort_values('date_parsed', ascending=False).head(25).to_dict('records')
+        for row in recent:
+            for k, v in row.items():
+                if pd.isna(v):
+                    row[k] = None
+
+        return {
+            'total': int(len(hits)),
+            'last14': int(len(last14)),
+            'last30': int(len(last30)),
+            'locations': by_location,
+            'recent': recent,
+            'note': 'Keyword-based signal from available oversight data; validate each incident before publication.'
+        }
+    except Exception:
+        return {'total': 0, 'last14': 0, 'last30': 0, 'locations': [], 'recent': [], 'note': 'Death tracker unavailable.'}
+
+
+def get_contractor_tracker_data():
+    """Seed contractor/subcontractor risk view (expand with live contract ingest)."""
+    return {
+        'updated': datetime.utcnow().strftime('%Y-%m-%d'),
+        'contractors': [
+            {
+                'name': 'GEO Group',
+                'segment': 'Detention operations / monitoring',
+                'moneyVector': 'Facility ops + BI monitoring revenue',
+                'conflictFlags': ['Lobbying intensity', 'Revolving-door risk', 'Detention condition allegations'],
+                'riskLevel': 'High'
+            },
+            {
+                'name': 'CoreCivic',
+                'segment': 'Detention operations',
+                'moneyVector': 'Bed capacity expansion + reopened facilities',
+                'conflictFlags': ['Lobbying exposure', 'Renewal despite incident allegations'],
+                'riskLevel': 'High'
+            },
+            {
+                'name': 'BI Incorporated (GEO subsidiary)',
+                'segment': 'ATD/electronic monitoring',
+                'moneyVector': 'Per-person recurring supervision revenue',
+                'conflictFlags': ['Surveillance expansion incentives', 'Parent-company overlap'],
+                'riskLevel': 'High'
+            },
+            {
+                'name': 'Akima / affiliates',
+                'segment': 'Facility and operational support',
+                'moneyVector': 'Prime/sub contracting in logistics and support',
+                'conflictFlags': ['Prime-sub transparency gaps'],
+                'riskLevel': 'Medium'
+            },
+            {
+                'name': 'LaSalle Corrections',
+                'segment': 'Regional detention operations',
+                'moneyVector': 'Emergency detention center operation contracts',
+                'conflictFlags': ['Rapid capacity expansion risk'],
+                'riskLevel': 'Medium'
+            },
+            {
+                'name': 'Palantir (historic ICE data platforms)',
+                'segment': 'Data/case management',
+                'moneyVector': 'Platform + integration contracts',
+                'conflictFlags': ['Data governance + civil liberties concerns'],
+                'riskLevel': 'Medium'
+            }
+        ]
+    }
+
+
 def get_risk_for_city(city_input, csv_path='protest_data_oversight.csv'):
     """
     Main function: load data, find city, calculate risk

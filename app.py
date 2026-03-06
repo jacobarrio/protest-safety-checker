@@ -12,6 +12,8 @@ from calculator import (
     get_spending_analytics,
     get_live_feed,
     get_us_state_incident_counts,
+    get_detention_death_tracker,
+    get_contractor_tracker_data,
 )
 import pandas as pd
 
@@ -130,6 +132,14 @@ def api_timeline():
 def api_us_map():
     """US state-level incident footprint for homepage map."""
     return jsonify(get_us_state_incident_counts())
+
+@app.route('/api/death-tracker')
+def api_death_tracker():
+    return jsonify(get_detention_death_tracker())
+
+@app.route('/api/contractor-tracker')
+def api_contractor_tracker():
+    return jsonify(get_contractor_tracker_data())
 
 @app.route('/health', methods=['GET'])
 def health():
