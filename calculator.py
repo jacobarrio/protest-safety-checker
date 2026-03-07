@@ -563,9 +563,67 @@ def get_us_state_incident_counts(csv_path='protest_data_oversight.csv'):
         return {"states": [], "summary": {"totalStates": 0, "totalIncidents": 0}}
 
 
-def get_detention_death_tracker(csv_path='protest_data_oversight.csv'):
-    """Track deaths/fatal incidents linked to detention context."""
+def get_detention_death_tracker(csv_path='protest_data_oversight.csv', deaths_csv_path='data/detention_deaths.csv'):
+    """Track detention-linked deaths with preference for structured death dataset."""
     try:
+        now = pd.Timestamp.now()
+
+        # Preferred source: curated structured deaths CSV
+        if os.path.exists(deaths_csv_path):
+            dd = pd.read_csv(deaths_csv_path)
+            required = {'date', 'location', 'title', 'source_url'}
+            if required.issubset(set(dd.columns)):
+                dd = dd.copy()
+                dd['date_parsed'] = pd.to_datetime(dd['date'], errors='coerce')
+                dd['status'] = dd.get('status', 'unverified').fillna('unverified')
+                dd['operator_type'] = dd.get('operator_type', 'unknown').fillna('unknown')
+
+                last14 = dd[dd['date_parsed'] >= (now - pd.Timedelta(days=14))]
+                last30 = dd[dd['date_parsed'] >= (now - pd.Timedelta(days=30))]
+
+                by_location = (
+                    dd.groupby('location', dropna=False)
+                    .size()
+                    .reset_index(name='count')
+                    .sort_values('count', ascending=False)
+                    .head(12)
+                    .to_dict('records')
+                )
+
+                recent = dd.sort_values('date_parsed', ascending=False).head(30).to_dict('records')
+                for row in recent:
+                    for k, v in row.items():
+                        if pd.isna(v):
+                            row[k] = None
+
+                status_counts = (
+                    dd.groupby('status')
+                    .size()
+                    .reset_index(name='count')
+                    .to_dict('records')
+                )
+
+                op_counts = (
+                    dd.groupby('operator_type')
+                    .size()
+                    .reset_index(name='count')
+                    .to_dict('records')
+                )
+
+                alert_level = 'high' if len(last14) >= 3 else ('elevated' if len(last14) >= 1 else 'baseline')
+                return {
+                    'total': int(len(dd)),
+                    'last14': int(len(last14)),
+                    'last30': int(len(last30)),
+                    'locations': by_location,
+                    'recent': recent,
+                    'statusCounts': status_counts,
+                    'operatorTypeCounts': op_counts,
+                    'alertLevel': alert_level,
+                    'note': 'Structured death dataset loaded from data/detention_deaths.csv.'
+                }
+
+        # Fallback source: keyword mining from oversight incident CSV
         df = _read_incident_csv(csv_path).copy()
         df['date_parsed'] = pd.to_datetime(df['date'], errors='coerce')
 
@@ -588,10 +646,11 @@ def get_detention_death_tracker(csv_path='protest_data_oversight.csv'):
                 'last30': 0,
                 'locations': [],
                 'recent': [],
+                'statusCounts': [],
+                'operatorTypeCounts': [],
                 'note': 'No detention-linked death incidents matched current keywords in dataset.'
             }
 
-        now = pd.Timestamp.now()
         last14 = hits[hits['date_parsed'] >= (now - pd.Timedelta(days=14))]
         last30 = hits[hits['date_parsed'] >= (now - pd.Timedelta(days=30))]
 
@@ -618,11 +677,13 @@ def get_detention_death_tracker(csv_path='protest_data_oversight.csv'):
             'last30': int(len(last30)),
             'locations': by_location,
             'recent': recent,
+            'statusCounts': [{'status': 'keyword-signal', 'count': int(len(hits))}],
+            'operatorTypeCounts': [{'operator_type': 'unknown', 'count': int(len(hits))}],
             'alertLevel': alert_level,
-            'note': 'Keyword-based signal from available oversight data; validate each incident before publication.'
+            'note': 'Keyword-based fallback signal from oversight data. Add data/detention_deaths.csv for fuller coverage.'
         }
     except Exception:
-        return {'total': 0, 'last14': 0, 'last30': 0, 'locations': [], 'recent': [], 'note': 'Death tracker unavailable.'}
+        return {'total': 0, 'last14': 0, 'last30': 0, 'locations': [], 'recent': [], 'statusCounts': [], 'operatorTypeCounts': [], 'note': 'Death tracker unavailable.'}
 
 
 def get_contractor_tracker_data():

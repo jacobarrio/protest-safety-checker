@@ -174,10 +174,16 @@
       <h3>Detention Facility Death Tracker</h3>
       <div class="muted" id="deathTrackerNote">Loading detention-linked death signals…</div>
       <div class="kpis" style="margin-top:10px">
-        <div class="kpi"><div class="k">Total flagged deaths</div><div class="v" id="deathTotal">0</div></div>
+        <div class="kpi"><div class="k">Total tracked deaths</div><div class="v" id="deathTotal">0</div></div>
         <div class="kpi"><div class="k">Last 14 days</div><div class="v" id="death14">0</div></div>
         <div class="kpi"><div class="k">Last 30 days</div><div class="v" id="death30">0</div></div>
-        <div class="kpi"><div class="k">Highest-signal locations</div><div class="v" id="deathLocCount">0</div></div>
+        <div class="kpi"><div class="k">Tracked locations</div><div class="v" id="deathLocCount">0</div></div>
+      </div>
+      <div class="kpis" style="margin-top:8px">
+        <div class="kpi"><div class="k">Confirmed</div><div class="v" id="deathConfirmed">0</div></div>
+        <div class="kpi"><div class="k">Probable</div><div class="v" id="deathProbable">0</div></div>
+        <div class="kpi"><div class="k">Private operator</div><div class="v" id="deathPrivate">0</div></div>
+        <div class="kpi"><div class="k">Public/gov operator</div><div class="v" id="deathPublic">0</div></div>
       </div>
       <div class="panel" style="margin-top:10px;padding:10px;background:rgba(6,12,28,.72)">
         <h3 style="margin-bottom:6px">Top locations</h3>
@@ -322,6 +328,14 @@
       document.getElementById('deathLocCount').textContent = (data.locations || []).length;
       const level = data.alertLevel || 'baseline';
       document.getElementById('deathTrackerNote').innerHTML = `<span class="alert-${level}">Alert: ${level.toUpperCase()}</span> · ${data.note || 'Death tracker loaded.'}`;
+
+      const statusMap = Object.fromEntries((data.statusCounts || []).map(x => [String(x.status || '').toLowerCase(), Number(x.count || 0)]));
+      document.getElementById('deathConfirmed').textContent = statusMap.confirmed || 0;
+      document.getElementById('deathProbable').textContent = statusMap.probable || 0;
+
+      const opMap = Object.fromEntries((data.operatorTypeCounts || []).map(x => [String(x.operator_type || '').toLowerCase(), Number(x.count || 0)]));
+      document.getElementById('deathPrivate').textContent = opMap.private || 0;
+      document.getElementById('deathPublic').textContent = (opMap.public || 0) + (opMap.government || 0);
 
       const locs = data.locations || [];
       document.getElementById('deathLocations').innerHTML = locs.length
