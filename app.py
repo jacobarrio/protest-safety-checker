@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, Response, render_template, request, jsonify, redirect
 from calculator import (
     get_risk_for_city,
     get_all_cities,
@@ -23,21 +23,52 @@ app = Flask(__name__)
 def index():
     return render_template('index.html')
 
+@app.route('/ice-risk-tracker')
+@app.route('/risk-tracker')
+@app.route('/tracker')
+def legacy_tracker_redirects():
+    return redirect('/')
+
+@app.route('/favicon.ico')
+def favicon():
+    return Response(status=204)
+
+@app.route('/apple-touch-icon.png')
+def apple_touch_icon():
+    return Response(status=204)
+
+@app.route('/robots.txt')
+def robots_txt():
+    return Response("User-agent: *\nAllow: /\n", mimetype='text/plain')
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    xml = (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+        "<url><loc>https://protest-safety-checker-production.up.railway.app/</loc></url>"
+        "<url><loc>https://protest-safety-checker-production.up.railway.app/detention-facilities</loc></url>"
+        "<url><loc>https://protest-safety-checker-production.up.railway.app/intel</loc></url>"
+        "<url><loc>https://protest-safety-checker-production.up.railway.app/health</loc></url>"
+        "</urlset>"
+    )
+    return Response(xml, mimetype='application/xml')
+
 @app.route('/check', methods=['POST'])
 def check_risk():
     city_input = request.form.get('city', '').strip()
-    
+
     if not city_input:
-        return render_template('index.html', 
+        return render_template('index.html',
             error='Please enter a city name')
-    
+
     risk_data = get_risk_for_city(city_input)
-    
+
     if 'error' in risk_data:
         return render_template('index.html',
             error=risk_data['error'],
             suggestions=risk_data.get('suggestions', []))
-    
+
     return render_template('results.html', data=risk_data)
 
 @app.route('/api/check', methods=['POST'])
@@ -45,10 +76,10 @@ def api_check_post():
     """API endpoint for programmatic access (POST with JSON)"""
     data = request.get_json()
     city = data.get('city', '').strip()
-    
+
     if not city:
         return jsonify({'error': 'City name required'}), 400
-    
+
     risk_data = get_risk_for_city(city)
     return jsonify(risk_data)
 
@@ -147,4 +178,3 @@ def health():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-
