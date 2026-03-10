@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}ICE Risk Tracker{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="shell">
+    <nav class="nav">
+      <a class="brand" href="/">ICE-RISK // PROTEST-SAFETY</a>
+      <div class="nav-links">
+        <a href="/">Risk Check</a>
+        <a href="/for-organizers">For Organizers</a>
+        <a href="/for-researchers">For Researchers</a>
+        <a href="/methodology">Methodology</a>
+        <a href="/safety-privacy">Safety & Privacy</a>
+      </div>
+    </nav>
+    {% block content %}{% endblock %}
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

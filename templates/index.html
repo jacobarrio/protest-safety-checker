@@ -1,478 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ICE Risk Intelligence — Protest Safety Checker</title>
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Archivo:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:radial-gradient(1200px 600px at 20% -10%, #1d3f91 0%, #0a1430 42%, #060b1c 100%);color:#dbe7ff;min-height:100vh}
-    .wrap{max-width:1180px;margin:0 auto;padding:22px}
+{% extends 'base.html' %}
+{% block title %}ICE Risk Tracker — Fast Risk Check{% endblock %}
 
-    .topbar{display:flex;justify-content:space-between;align-items:center;background:rgba(8,15,37,.72);backdrop-filter:blur(10px);color:#fff;border-radius:16px;padding:14px 16px;margin-bottom:14px;border:1px solid rgba(140,170,255,.25);box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .brand{display:flex;align-items:center;gap:10px;font-family:Archivo, sans-serif;font-size:1.04rem;font-weight:800;letter-spacing:.02em}
-    .brand svg{width:26px;height:26px;display:block}
-    .brand small{display:block;font-size:.68rem;font-weight:600;color:#bfdbfe;letter-spacing:.06em;text-transform:uppercase}
-    .topnav a{color:#c8d7ff;text-decoration:none;font-family:Archivo,sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;margin-left:12px;padding:7px 10px;border-radius:999px;border:1px solid transparent}
-    .topnav a:hover{color:#fff;border-color:rgba(140,170,255,.45);background:rgba(45,98,232,.2)}
-
-    .layout{display:grid;grid-template-columns:250px 1fr;gap:14px;align-items:start}
-    .sidebar{background:rgba(10,18,44,.72);border:1px solid rgba(140,170,255,.25);border-radius:16px;padding:14px;height:fit-content;position:sticky;top:14px;backdrop-filter:blur(10px)}
-    .sidebar-title{font-family:Archivo,sans-serif;font-size:.74rem;color:#9fb9ff;font-weight:800;letter-spacing:.11em;text-transform:uppercase;margin-bottom:8px}
-    .side-link{display:block;padding:10px 10px;border-radius:10px;color:#d8e4ff;text-decoration:none;font-family:Archivo,sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;border:1px solid transparent}
-    .side-link:hover{background:rgba(45,98,232,.18);border-color:rgba(140,170,255,.32)}
-
-    .hero{background:linear-gradient(140deg,rgba(14,25,61,.88) 0%,rgba(14,38,104,.88) 56%,rgba(24,59,150,.72) 100%);border:1px solid rgba(148,181,255,.33);border-radius:18px;padding:30px;box-shadow:0 18px 40px rgba(0,0,0,.35);backdrop-filter:blur(10px)}
-    .title{font-family:"DM Serif Display", serif;font-size:3.4rem;line-height:1.01;font-weight:400;letter-spacing:-0.02em;color:#f8fbff;text-align:center;text-wrap:balance}
-    .sub{margin-top:12px;color:#cfe0ff;text-align:center;font-family:Archivo,sans-serif;font-size:.83rem;letter-spacing:.13em;text-transform:uppercase}
-    .hero-meta{margin-top:14px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
-    .hero-pill{font-size:.68rem;font-family:Archivo,sans-serif;background:rgba(22,35,74,.72);border:1px solid rgba(163,191,255,.32);padding:7px 11px;border-radius:999px;color:#e7efff;letter-spacing:.08em;text-transform:uppercase}
-
-    .search-card{margin-top:18px;background:rgba(10,20,46,.78);border:1px solid rgba(148,181,255,.28);border-radius:14px;padding:14px;position:relative}
-    .search-row{display:grid;grid-template-columns:1fr auto;gap:10px}
-    input{width:100%;padding:13px 14px;border:1px solid rgba(148,181,255,.45);border-radius:12px;background:rgba(7,13,30,.85);color:#e7eeff;font-size:1rem}
-    button{border:none;border-radius:12px;padding:14px 20px;font-family:Archivo,sans-serif;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:linear-gradient(120deg,#2d62e8,#4f83ff);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(45,98,232,.35);transition:transform .18s ease, box-shadow .18s ease}
-    button:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(45,98,232,.42)}
-    #autocomplete{position:absolute;top:66px;left:14px;right:130px;background:#fff;border:1px solid #bfd0ef;border-radius:12px;max-height:220px;overflow:auto;display:none;z-index:10}
-    .autocomplete-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid #edf2fb}
-    .autocomplete-item:hover{background:#eff6ff}
-    .meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;color:#a8bff6;font-size:.82rem}
-
-    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
-    .kpi{background:rgba(8,15,37,.68);border:1px solid rgba(140,170,255,.26);border-radius:12px;padding:14px;backdrop-filter:blur(8px)}
-    .k{font-size:.72rem;color:#a6bdf2;text-transform:uppercase;letter-spacing:.11em}
-    .v{font-size:1.4rem;font-weight:800;margin-top:6px;color:#f0f5ff}
-
-    .panel{box-shadow:0 10px 28px rgba(0,0,0,.24);background:rgba(8,15,37,.68);border:1px solid rgba(140,170,255,.24);border-radius:16px;padding:14px;margin-top:12px;backdrop-filter:blur(8px)}
-    .map-panel{min-height:460px}
-    #usMap{width:100%;height:420px}
-    .panel h3{font-size:1rem;margin-bottom:8px;color:#e7efff}
-    .muted{color:#9ab3ec;font-size:.88rem}
-
-    .risk-box{display:flex;justify-content:space-between;gap:14px;align-items:center}
-    .risk-level{font-size:1.8rem;font-weight:800;color:#ffffff}
-    .badge{padding:7px 10px;border-radius:999px;border:1px solid rgba(148,181,255,.35);background:rgba(29,78,216,.2);font-weight:700;font-size:.8rem;color:#dbe8ff}
-
-    .drivers li{margin:5px 0;color:#c3d6ff}
-    .incident{border-left:3px solid #4f83ff;background:rgba(10,20,46,.72);padding:10px;border-radius:6px;margin-bottom:8px}
-    .incident .d{font-size:.8rem;color:#98b0e6}
-    .incident .t{font-weight:600;margin-top:4px;color:#f0f5ff}
-    .incident .c{font-size:.84rem;color:#ff8ea2;margin-top:4px}
-    .contractor-card{border:1px solid rgba(140,170,255,.24);border-radius:12px;padding:10px;background:rgba(10,20,46,.62);margin-bottom:8px}
-    .risk-high{color:#ff9cae;font-weight:700}
-    .risk-medium{color:#ffd08a;font-weight:700}
-    .risk-low{color:#8ef0b8;font-weight:700}
-    .alert-high{color:#ff9cae;font-weight:700}
-    .alert-elevated{color:#ffd08a;font-weight:700}
-    .alert-baseline{color:#8ef0b8;font-weight:700}
-
-    .site-footer{margin-top:14px;background:rgba(8,15,37,.64);border:1px solid rgba(140,170,255,.24);border-radius:14px;padding:14px}
-    .footer-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
-    .source-logos{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .source-logo{display:flex;align-items:center;gap:8px;border:1px solid rgba(140,170,255,.3);border-radius:12px;padding:6px 9px;background:rgba(20,36,77,.65)}
-    .source-logo span{font-size:.76rem;color:#c7d8ff;font-weight:700}
-    .github-link{color:#7fb0ff;text-decoration:none;font-weight:700}
-
-    .loading,.error{margin-top:10px;padding:14px;border-radius:12px}
-    .loading{background:#eef4ff;color:#17429f}
-    .error{background:#fff0f1;color:#9c1c2d;border:1px solid #f6ccd1}
-    .hidden{display:none}
-
-    @media(max-width:760px){.layout{grid-template-columns:1fr}.sidebar{position:static} .kpis{grid-template-columns:repeat(2,1fr)} .search-row{grid-template-columns:1fr} #autocomplete{right:14px;top:106px}}
-    @media(max-width:560px){.kpis{grid-template-columns:1fr} .topbar{flex-direction:column;align-items:flex-start;gap:8px}}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M32 6L54 14V30C54 44.5 45.2 53.8 32 58C18.8 53.8 10 44.5 10 30V14L32 6Z" fill="#E0ECFF"/>
-          <path d="M32 12L49 18V30C49 41 42.7 48.4 32 52C21.3 48.4 15 41 15 30V18L32 12Z" fill="#1E63F3"/>
-          <path d="M28 22H36V32H44V40H36V48H28V40H20V32H28V22Z" fill="white"/>
-        </svg>
-        <div>
-          ICE RISK TRACKER
-          <small>Protest Safety Checker</small>
-        </div>
-      </div>
-      <div class="topnav">
-        <a href="/intel">Intel dashboard</a>
-        <a href="/detention-facilities">Detention facilities</a>
-        <a href="#contractors">Contractor tracker</a>
-        <a href="#deaths">Death tracker</a>
-      </div>
-    </div>
-
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="sidebar-title">Categories</div>
-        <a class="side-link" href="#search">Risk Search</a>
-        <a class="side-link" href="/intel">Trending Intelligence</a>
-        <a class="side-link" href="/intel">Spending Analysis</a>
-        <a class="side-link" href="/intel">Live Feed</a>
-        <a class="side-link" href="#contractors">Contractor Tracker</a>
-        <a class="side-link" href="#deaths">Detention Death Tracker</a>
-        <a class="side-link" href="/intel">Full Intelligence Dashboard →</a>
-      </aside>
-
-      <div>
-    <div class="hero" id="search">
-      <div class="title">Situational Risk Intelligence for Protest Organizers</div>
-      <div class="sub">ICE Activity Monitor · Trend Signals · Transparent Risk Scoring</div>
-      <div class="hero-meta">
-        <span class="hero-pill">v0.2 Interface</span>
-        <span class="hero-pill">Public-source dataset</span>
-        <span class="hero-pill">Transparent scoring</span>
-      </div>
-
-      <div class="search-card">
-        <div class="search-row">
-          <input id="cityInput" placeholder="Enter city (e.g., Portland, OR)" autocomplete="off" />
-          <button onclick="checkRisk()">Analyze</button>
-        </div>
-        <div id="autocomplete"></div>
-        <div class="meta">
-          <span id="lastUpdated">Last updated: loading...</span>
-          <span id="datasetSummary">Dataset: loading...</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel map-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-        <div>
-          <h3>National Incident Footprint</h3>
-          <div class="muted" style="margin-top:3px">Animated state-level map with 30-day trend deltas.</div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button id="metricTotal" style="padding:8px 12px;font-size:.75rem;background:#2d62e8" onclick="setMapMetric('count')">Total</button>
-          <button id="metricRecent" style="padding:8px 12px;font-size:.75rem;background:#143f9f" onclick="setMapMetric('recent30')">Last 30d</button>
-          <button id="metricDelta" style="padding:8px 12px;font-size:.75rem;background:#0f2d66" onclick="setMapMetric('delta30')">Δ 30d</button>
-        </div>
-      </div>
-      <div id="usMap"></div>
-      <div class="kpis" style="margin-top:10px">
-        <div class="kpi"><div class="k">States in dataset</div><div class="v" id="mapStates">0</div></div>
-        <div class="kpi"><div class="k">Total incidents</div><div class="v" id="mapIncidents">0</div></div>
-        <div class="kpi"><div class="k">Recent 30d</div><div class="v" id="mapRecent">0</div></div>
-        <div class="kpi"><div class="k">Prev 30d</div><div class="v" id="mapPrev">0</div></div>
-      </div>
-      <div class="panel" style="margin-top:10px;padding:10px;background:rgba(6,12,28,.72)">
-        <h3 style="margin-bottom:6px">Top moving states (30d)</h3>
-        <ul id="topMovers" class="drivers"></ul>
-      </div>
-    </div>
-
-    <div class="panel" id="deaths">
-      <h3>Detention Facility Death Tracker</h3>
-      <div class="muted" id="deathTrackerNote">Loading detention-linked death signals…</div>
-      <div class="kpis" style="margin-top:10px">
-        <div class="kpi"><div class="k">Total tracked deaths</div><div class="v" id="deathTotal">0</div></div>
-        <div class="kpi"><div class="k">Last 14 days</div><div class="v" id="death14">0</div></div>
-        <div class="kpi"><div class="k">Last 30 days</div><div class="v" id="death30">0</div></div>
-        <div class="kpi"><div class="k">Tracked locations</div><div class="v" id="deathLocCount">0</div></div>
-      </div>
-      <div class="kpis" style="margin-top:8px">
-        <div class="kpi"><div class="k">Confirmed</div><div class="v" id="deathConfirmed">0</div></div>
-        <div class="kpi"><div class="k">Probable</div><div class="v" id="deathProbable">0</div></div>
-        <div class="kpi"><div class="k">Private operator</div><div class="v" id="deathPrivate">0</div></div>
-        <div class="kpi"><div class="k">Public/gov operator</div><div class="v" id="deathPublic">0</div></div>
-      </div>
-      <div class="panel" style="margin-top:10px;padding:10px;background:rgba(6,12,28,.72)">
-        <h3 style="margin-bottom:6px">Top locations</h3>
-        <ul id="deathLocations" class="drivers"></ul>
-      </div>
-      <div class="panel" style="margin-top:10px;padding:10px;background:rgba(6,12,28,.72)">
-        <h3 style="margin-bottom:6px">Recent flagged death incidents</h3>
-        <div id="deathRecent"></div>
-      </div>
-    </div>
-
-    <div class="panel" id="contractors">
-      <h3>ICE Contractor / Subcontractor Tracker</h3>
-      <div class="muted" id="contractorUpdated">Loading contractor intelligence…</div>
-      <div id="contractorList" style="margin-top:10px"></div>
-    </div>
-
-    <div id="loading" class="loading hidden">Analyzing incidents…</div>
-    <div id="error" class="error hidden"></div>
-
-    <div id="results" class="hidden">
-      <div class="panel">
-        <div class="risk-box">
-          <div>
-            <div class="risk-level" id="riskLevel">Low Risk</div>
-            <div class="muted" id="riskScore">Risk score: 0 / 100</div>
-          </div>
-          <div>
-            <div class="badge" id="confidenceBadge">Confidence: Low</div>
-            <div class="muted" id="confidenceReason"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="kpis">
-        <div class="kpi"><div class="k">Total incidents</div><div class="v" id="statTotal">0</div></div>
-        <div class="kpi"><div class="k">Use of force</div><div class="v" id="statForce">0</div><div class="muted" id="statForcePct"></div></div>
-        <div class="kpi"><div class="k">U.S. citizens</div><div class="v" id="statCitizen">0</div><div class="muted" id="statCitizenPct"></div></div>
-        <div class="kpi"><div class="k">Sensitive locations</div><div class="v" id="statSensitive">0</div><div class="muted" id="statSensitivePct"></div></div>
-      </div>
-
-      <div class="panel">
-        <h3>Why this score</h3>
-        <div class="muted" id="scoreExplanation">Score explanation unavailable.</div>
-        <ul class="drivers" id="topDrivers" style="margin-top:6px"></ul>
-      </div>
-
-      <div class="panel">
-        <h3>Incidents over time</h3>
-        <canvas id="timelineChart" height="120"></canvas>
-      </div>
-
-      <div class="panel">
-        <h3>Recent incidents</h3>
-        <div id="incidentsList"></div>
-      </div>
-    </div>
-      </div>
-    </div>
-
-    <div class="site-footer">
-      <div class="footer-row">
-        <a class="github-link" href="https://github.com/jacobarrio/protest-safety-checker" target="_blank" rel="noopener">View project on GitHub ↗</a>
-        <div class="source-logos">
-          <div class="source-logo"><span>🏛️ U.S. House Oversight</span></div>
-          <div class="source-logo"><span>🛡️ DHS / ICE Sources</span></div>
-          <div class="source-logo"><span>🔗 Open Data + Code</span></div>
-        </div>
-      </div>
-    </div>
+{% block content %}
+<section class="hero">
+  <div class="eyebrow">LIVE INTEL SIGNAL · PUBLIC DATA</div>
+  <h1>Fast ICE risk signal check for protest planning</h1>
+  <p class="sub">Get a location-level risk estimate in under a minute. Built for organizers who need actionable signal, not dashboard overload.</p>
+  <div class="btn-group">
+    <button class="btn" onclick="checkRisk()">Run Risk Check</button>
+    <a class="btn secondary" href="/methodology">See Methodology</a>
   </div>
 
-  <script>
-    let allCities = [];
-    let chartInstance = null;
-    let usMapData = [];
-    let currentMapMetric = 'count';
+  <div class="search-row" style="margin-top:14px;">
+    <input id="cityInput" type="text" placeholder="Enter city (example: Portland, OR)" autocomplete="off" />
+    <button class="btn" onclick="checkRisk()">Analyze</button>
+    <div id="autocomplete"></div>
+  </div>
 
-    fetch('/api/cities').then(r => r.json()).then(c => allCities = c || []);
-    fetch('/api/last_updated').then(r => r.json()).then(data => {
-      document.getElementById('lastUpdated').textContent = data.display ? `Last updated: ${data.display}` : (data.time_str ? `Last updated: ${data.time_str}` : 'Last updated: unknown');
-    });
-    fetch('/api/data_summary').then(r => r.json()).then(d => {
-      if (d && d.total_records) {
-        const start = d.date_range?.start || 'unknown';
-        const end = d.date_range?.end || 'unknown';
-        document.getElementById('datasetSummary').textContent = `Dataset: ${d.total_records} records, ${d.unique_locations} locations (${start} → ${end})`;
-      } else {
-        document.getElementById('datasetSummary').textContent = 'Dataset summary unavailable';
-      }
-    });
-    fetch('/api/us-map').then(r => r.json()).then(payload => {
-      usMapData = payload.states || [];
-      renderMapSummary(payload.summary || {});
-      renderUsMap();
-    }).catch(() => {
-      document.getElementById('usMap').innerHTML = '<div class="muted">Map unavailable right now.</div>';
-    });
-    fetch('/api/death-tracker').then(r => r.json()).then(renderDeathTracker).catch(() => {
-      document.getElementById('deathTrackerNote').textContent = 'Death tracker unavailable right now.';
-    });
-    fetch('/api/contractor-tracker').then(r => r.json()).then(renderContractorTracker).catch(() => {
-      document.getElementById('contractorUpdated').textContent = 'Contractor tracker unavailable right now.';
-    });
+  <div class="sample">
+    <div class="title">Immediate next move</div>
+    <p class="muted" style="margin:0;">Run a city check, then choose one mitigation: route change, timing shift, or comms fallback.</p>
+  </div>
 
-    const cityInput = document.getElementById('cityInput');
-    const autocompleteDiv = document.getElementById('autocomplete');
+  <div id="riskResult" class="card result">
+    <h2 id="riskLevel">—</h2>
+    <p id="riskScore" class="muted">Risk score</p>
+    <p id="riskConfidence" class="muted"></p>
+    <ul id="riskDrivers" class="list"></ul>
+  </div>
+</section>
 
-    cityInput.addEventListener('input', function () {
-      const value = this.value.trim();
-      if (!value) return autocompleteDiv.style.display = 'none';
-      fetch(`/api/cities?q=${encodeURIComponent(value)}`).then(r => r.json()).then(matches => {
-        if (!Array.isArray(matches) || matches.length === 0) {
-          matches = allCities.filter(c => c.toLowerCase().includes(value.toLowerCase())).slice(0, 10);
-        }
-        if (matches.length === 0) return autocompleteDiv.style.display = 'none';
-        autocompleteDiv.innerHTML = matches.map(city => `<div class="autocomplete-item" onclick="selectCity('${city.replace(/'/g, "\\'")}')">${city}</div>`).join('');
-        autocompleteDiv.style.display = 'block';
-      }).catch(() => autocompleteDiv.style.display = 'none');
-    });
+<section class="grid cols-3">
+  <div class="kpi">
+    <div class="label">Incidents in dataset</div>
+    <div id="metaIncidents" class="value">—</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Locations covered</div>
+    <div id="metaCities" class="value">—</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Last data update</div>
+    <div id="metaUpdated" class="value" style="font-size:16px">—</div>
+  </div>
+</section>
 
-    function selectCity(city){ cityInput.value = city; autocompleteDiv.style.display='none'; checkRisk(); }
-    document.addEventListener('click', e => { if(!cityInput.contains(e.target) && !autocompleteDiv.contains(e.target)) autocompleteDiv.style.display='none'; });
-    cityInput.addEventListener('keypress', e => { if(e.key === 'Enter'){ autocompleteDiv.style.display='none'; checkRisk(); }});
+<section class="trust-strip">
+  <div class="trust-item"><strong>Sources:</strong> Public-source incident, oversight, and detention-linked records.</div>
+  <div class="trust-item"><strong>Cadence:</strong> Regular updates; always verify with local ground intel before action.</div>
+  <div class="trust-item"><strong>Privacy:</strong> No account required for basic checks. Don’t enter sensitive identities.</div>
+</section>
 
-    function renderMapSummary(summary){
-      document.getElementById('mapStates').textContent = summary.totalStates || 0;
-      document.getElementById('mapIncidents').textContent = summary.totalIncidents || 0;
-      document.getElementById('mapRecent').textContent = summary.recent30 || 0;
-      document.getElementById('mapPrev').textContent = summary.prev30 || 0;
+<section class="card" style="margin-top:12px;">
+  <h2>What to do next after a risk check</h2>
+  <div class="grid cols-2">
+    <div>
+      <ul class="list">
+        <li>Adjust route, timing, and meetup points.</li>
+        <li>Assign legal observer + de-escalation roles.</li>
+        <li>Plan rapid comms fallback if conditions shift.</li>
+      </ul>
+    </div>
+    <div>
+      <ul class="list">
+        <li><a href="/for-organizers">Organizer playbook →</a></li>
+        <li><a href="/for-researchers">Research/data context →</a></li>
+        <li><a href="/safety-privacy">Safety + privacy practices →</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+{% endblock %}
 
-      const movers = (summary.topMovers || []).filter(m => Number(m.delta30) !== 0);
-      document.getElementById('topMovers').innerHTML = movers.length
-        ? movers.map(m => `<li>${m.state}: <strong>${m.delta30 >= 0 ? '+' : ''}${m.delta30}</strong> (recent ${m.recent30}, prev ${m.prev30})</li>`).join('')
-        : '<li>No material 30-day movement in current dataset window.</li>';
-    }
-
-    function renderDeathTracker(data){
-      document.getElementById('deathTotal').textContent = data.total || 0;
-      document.getElementById('death14').textContent = data.last14 || 0;
-      document.getElementById('death30').textContent = data.last30 || 0;
-      document.getElementById('deathLocCount').textContent = (data.locations || []).length;
-      const level = data.alertLevel || 'baseline';
-      document.getElementById('deathTrackerNote').innerHTML = `<span class="alert-${level}">Alert: ${level.toUpperCase()}</span> · ${data.note || 'Death tracker loaded.'}`;
-
-      const statusMap = Object.fromEntries((data.statusCounts || []).map(x => [String(x.status || '').toLowerCase(), Number(x.count || 0)]));
-      document.getElementById('deathConfirmed').textContent = statusMap.confirmed || 0;
-      document.getElementById('deathProbable').textContent = statusMap.probable || 0;
-
-      const opMap = Object.fromEntries((data.operatorTypeCounts || []).map(x => [String(x.operator_type || '').toLowerCase(), Number(x.count || 0)]));
-      document.getElementById('deathPrivate').textContent = opMap.private || 0;
-      document.getElementById('deathPublic').textContent = (opMap.public || 0) + (opMap.government || 0);
-
-      const locs = data.locations || [];
-      document.getElementById('deathLocations').innerHTML = locs.length
-        ? locs.map(l => `<li>${l.location || 'Unknown location'}: <strong>${l.count}</strong></li>`).join('')
-        : '<li>No flagged locations yet.</li>';
-
-      const recent = data.recent || [];
-      document.getElementById('deathRecent').innerHTML = recent.length
-        ? recent.slice(0, 8).map(r => `<div class="incident"><div class="d">${r.date || 'Unknown date'} · ${r.location || 'Unknown location'}</div><div class="t">${r.title || 'No title'}</div><div class="c">${r.category || ''}</div>${r.source_url ? `<div class="d" style="margin-top:5px"><a class="github-link" href="${r.source_url}" target="_blank" rel="noopener">Source ↗</a></div>` : ''}</div>`).join('')
-        : '<div class="muted">No recent flagged incidents.</div>';
-    }
-
-    function renderContractorTracker(data){
-      document.getElementById('contractorUpdated').textContent = `Updated: ${data.updated || 'unknown'} · Seed tracker (expand with live contract ingest).`;
-      const contractors = data.contractors || [];
-      document.getElementById('contractorList').innerHTML = contractors.map(c => {
-        const riskClass = `risk-${String(c.riskLevel || '').toLowerCase()}`;
-        const flags = (c.conflictFlags || []).map(f => `<span class="hero-pill" style="font-size:.62rem">${f}</span>`).join(' ');
-        const events = (c.contractEvents || []).map(e => `<li>${e.year}: <strong>${e.value}</strong> — ${e.label} <span class="muted">(${e.source})</span></li>`).join('');
-        return `<div class="contractor-card">
-          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
-            <div style="font-weight:800;color:#f1f6ff">${c.name}</div>
-            <div class="${riskClass}">${c.riskLevel || 'N/A'} risk</div>
-          </div>
-          <div class="muted" style="margin-top:4px">${c.segment || ''}</div>
-          <div style="margin-top:6px;color:#d6e3ff"><strong>Money vector:</strong> ${c.moneyVector || 'N/A'}</div>
-          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${flags}</div>
-          ${events ? `<div style="margin-top:8px"><div class="k" style="font-size:.62rem">Reported contract timeline</div><ul class="drivers">${events}</ul></div>` : ''}
-        </div>`;
-      }).join('') || '<div class="muted">No contractor rows loaded.</div>';
-    }
-
-    function setMapMetric(metric){
-      currentMapMetric = metric;
-      document.getElementById('metricTotal').style.background = metric === 'count' ? '#2d62e8' : '#143f9f';
-      document.getElementById('metricRecent').style.background = metric === 'recent30' ? '#2d62e8' : '#143f9f';
-      document.getElementById('metricDelta').style.background = metric === 'delta30' ? '#2d62e8' : '#0f2d66';
-      renderUsMap();
-    }
-
-    function renderUsMap(){
-      const rows = usMapData;
-      if (!Array.isArray(rows) || rows.length === 0) {
-        document.getElementById('usMap').innerHTML = '<div class="muted">No map data loaded.</div>';
-        return;
-      }
-
-      const labels = {count: 'Total incidents', recent30: 'Last 30d', delta30: 'Δ 30d'};
-      const states = rows.map(r => r.state);
-      const z = rows.map(r => Number(r[currentMapMetric] || 0));
-      const absMax = Math.max(...z.map(v => Math.abs(v)), 1);
-      const colorscale = currentMapMetric === 'delta30'
-        ? [[0, '#1d4ed8'], [0.5, '#f8fafc'], [1, '#dc2626']]
-        : 'Reds';
-
-      const trace = {
-        type: 'choropleth',
-        locationmode: 'USA-states',
-        locations: states,
-        z,
-        zmin: currentMapMetric === 'delta30' ? -absMax : undefined,
-        zmax: currentMapMetric === 'delta30' ? absMax : undefined,
-        colorscale,
-        marker: {line: {color: '#ffffff', width: 0.7}},
-        colorbar: {title: labels[currentMapMetric]},
-        customdata: rows.map(r => [r.count, r.recent30, r.prev30, r.delta30]),
-        hovertemplate: '%{location}<br>Total: %{customdata[0]}<br>Last 30d: %{customdata[1]}<br>Prev 30d: %{customdata[2]}<br>Δ 30d: %{customdata[3]}<extra></extra>'
-      };
-
-      const layout = {
-        geo: {scope: 'usa', projection: {type: 'albers usa'}, bgcolor: 'rgba(0,0,0,0)'},
-        margin: {l: 0, r: 0, t: 0, b: 0},
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)'
-      };
-
-      const config = {displayModeBar: false, responsive: true};
-      const mapEl = document.getElementById('usMap');
-      if (mapEl.dataset.inited === '1') {
-        Plotly.animate('usMap', {data: [trace]}, {transition: {duration: 500, easing: 'cubic-in-out'}, frame: {duration: 500, redraw: true}});
-      } else {
-        Plotly.newPlot('usMap', [trace], layout, config);
-        mapEl.dataset.inited = '1';
-      }
-    }
-
-    function checkRisk(){
-      const city = cityInput.value.trim();
-      if(!city) return;
-      document.getElementById('loading').classList.remove('hidden');
-      document.getElementById('error').classList.add('hidden');
-      document.getElementById('results').classList.add('hidden');
-
-      fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({city})})
-      .then(r=>r.json())
-      .then(data=>{
-        document.getElementById('loading').classList.add('hidden');
-        if(data.error){ document.getElementById('error').textContent = data.error; document.getElementById('error').classList.remove('hidden'); return; }
-        displayResults(data);
-      })
-      .catch(()=>{
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('error').textContent='Error loading risk data';
-        document.getElementById('error').classList.remove('hidden');
-      });
-    }
-
-    function displayResults(data){
-      document.getElementById('riskLevel').textContent = `${data.risk_level} Risk`;
-      document.getElementById('riskScore').textContent = `Risk score: ${data.risk_score} / 100`;
-      document.getElementById('confidenceBadge').textContent = `Confidence: ${data.confidence || 'Low'}`;
-      document.getElementById('confidenceReason').textContent = data.confidence_reason || '';
-
-      document.getElementById('statTotal').textContent = data.total_incidents;
-      document.getElementById('statForce').textContent = data.use_of_force;
-      document.getElementById('statForcePct').textContent = `${data.use_of_force_pct}% of incidents`;
-      document.getElementById('statCitizen').textContent = data.us_citizens;
-      document.getElementById('statCitizenPct').textContent = `${data.us_citizens_pct}% of incidents`;
-      document.getElementById('statSensitive').textContent = data.sensitive_locations;
-      document.getElementById('statSensitivePct').textContent = `${data.sensitive_locations_pct}% of incidents`;
-
-      document.getElementById('scoreExplanation').textContent = data.score_explanation || 'Score explanation unavailable.';
-      document.getElementById('topDrivers').innerHTML = (data.top_drivers || []).map(d => `<li>${d.name}: <strong>${d.score}</strong></li>`).join('') || '<li>No top drivers available</li>';
-
-      if (data.timeline && data.timeline.length) renderChart(data.timeline);
-      document.getElementById('incidentsList').innerHTML = (data.recent_incidents || []).slice(0,10).map(inc => `
-        <div class="incident"><div class="d">${inc.date || 'Unknown date'}</div><div class="t">${inc.title || 'No title available'}</div><div class="c">${inc.category || ''}</div></div>
-      `).join('');
-
-      document.getElementById('results').classList.remove('hidden');
-    }
-
-    function renderChart(timeline){
-      const ctx = document.getElementById('timelineChart').getContext('2d');
-      if(chartInstance) chartInstance.destroy();
-      chartInstance = new Chart(ctx,{type:'line',data:{labels:timeline.map(x=>x.date),datasets:[{data:timeline.map(x=>x.count),borderColor:'#1e63f3',backgroundColor:'rgba(30,99,243,.12)',fill:true,tension:.25,pointRadius:2}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5f7299',maxTicksLimit:8},grid:{color:'#ebf1fb'}},y:{beginAtZero:true,ticks:{color:'#5f7299',precision:0},grid:{color:'#ebf1fb'}}}}});
-    }
-  </script>
-</body>
-</html>
+{% block scripts %}
+<script src="/static/site.js"></script>
+{% endblock %}

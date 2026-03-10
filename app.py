@@ -54,6 +54,22 @@ def sitemap_xml():
     )
     return Response(xml, mimetype='application/xml')
 
+@app.route('/for-organizers')
+def for_organizers():
+    return render_template('for_organizers.html')
+
+@app.route('/for-researchers')
+def for_researchers():
+    return render_template('for_researchers.html')
+
+@app.route('/methodology')
+def methodology():
+    return render_template('methodology.html')
+
+@app.route('/safety-privacy')
+def safety_privacy():
+    return render_template('safety_privacy.html')
+
 @app.route('/check', methods=['POST'])
 def check_risk():
     city_input = request.form.get('city', '').strip()

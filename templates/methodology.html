@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Methodology — ICE Risk Tracker{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Methodology (Plain Language)</h1>
+  <p class="sub">Transparent enough for trust. Simple enough to use under pressure.</p>
+  <h2>Scoring inputs</h2>
+  <ul class="list">
+    <li>Recent incident frequency and trajectory</li>
+    <li>Historical intensity patterns by location</li>
+    <li>Detention/facility-adjacent signal factors</li>
+    <li>Contextual weighting from oversight-linked records</li>
+  </ul>
+</section>
+
+<section class="card" style="margin-top:12px;">
+  <h2>Confidence and limits</h2>
+  <ul class="list">
+    <li>Confidence is higher where coverage is denser and more recent.</li>
+    <li>Low-data areas may understate or overstate true conditions.</li>
+    <li>Rapid policy and operational shifts can change risk faster than datasets update.</li>
+  </ul>
+  <p class="muted">Always combine this score with local observer reports and legal support context.</p>
+</section>
+{% endblock %}
