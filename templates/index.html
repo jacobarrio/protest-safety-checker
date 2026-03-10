@@ -12,7 +12,7 @@
   </div>
 
   <div class="search-row" style="margin-top:14px;">
-    <input id="cityInput" type="text" placeholder="Enter city (example: Portland, OR)" autocomplete="off" />
+    <input id="cityInput" type="text" placeholder="Enter city or ZIP (example: Portland, OR or 97205)" autocomplete="off" />
     <button class="btn" onclick="checkRisk()">Analyze</button>
     <div id="autocomplete"></div>
   </div>
@@ -25,8 +25,20 @@
   <div id="riskResult" class="card result">
     <h2 id="riskLevel">—</h2>
     <p id="riskScore" class="muted">Risk score</p>
+    <p id="riskResolved" class="muted"></p>
     <p id="riskConfidence" class="muted"></p>
+
+    <div class="grid cols-3" style="margin-top:8px;">
+      <div class="kpi"><div class="label">Total incidents</div><div id="statTotal" class="value">—</div></div>
+      <div class="kpi"><div class="label">Use of force</div><div id="statForce" class="value">—</div></div>
+      <div class="kpi"><div class="label">Sensitive locations</div><div id="statSensitive" class="value">—</div></div>
+    </div>
+
+    <h3 style="margin-top:14px;margin-bottom:8px;">Top risk drivers</h3>
     <ul id="riskDrivers" class="list"></ul>
+
+    <h3 style="margin-top:14px;margin-bottom:8px;">Score breakdown</h3>
+    <ul id="riskBreakdown" class="list"></ul>
   </div>
 </section>
 

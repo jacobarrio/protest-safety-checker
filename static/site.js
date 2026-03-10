@@ -36,24 +36,48 @@ async function checkRisk() {
     if (data.error) {
       document.getElementById('riskLevel').textContent = 'No result';
       document.getElementById('riskScore').textContent = data.error;
+      document.getElementById('riskResolved').textContent = '';
       document.getElementById('riskConfidence').textContent = '';
       document.getElementById('riskDrivers').innerHTML = '';
+      document.getElementById('riskBreakdown').innerHTML = '';
+      document.getElementById('statTotal').textContent = '—';
+      document.getElementById('statForce').textContent = '—';
+      document.getElementById('statSensitive').textContent = '—';
       output.classList.add('show');
       return;
     }
 
     document.getElementById('riskLevel').textContent = data.risk_level || 'Unknown';
     document.getElementById('riskScore').textContent = `Risk score: ${data.risk_score ?? '—'} / 100`;
+    document.getElementById('riskResolved').textContent = (data.query_input && data.resolved_location && data.query_input !== data.resolved_location)
+      ? `Resolved: ${data.query_input} → ${data.resolved_location}`
+      : '';
     document.getElementById('riskConfidence').textContent = data.confidence_reason || data.confidence || '';
 
-    const drivers = data.risk_drivers || data.drivers || [];
-    document.getElementById('riskDrivers').innerHTML = drivers.slice(0, 4).map(d => `<li>${d}</li>`).join('');
+    document.getElementById('statTotal').textContent = data.total_incidents ?? '—';
+    document.getElementById('statForce').textContent = `${data.use_of_force ?? 0} (${data.use_of_force_pct ?? 0}%)`;
+    document.getElementById('statSensitive').textContent = `${data.sensitive_locations ?? 0} (${data.sensitive_locations_pct ?? 0}%)`;
+
+    const drivers = data.top_drivers || data.risk_drivers || data.drivers || [];
+    document.getElementById('riskDrivers').innerHTML = drivers.slice(0, 4).map(d => {
+      if (typeof d === 'string') return `<li>${d}</li>`;
+      return `<li>${d.name}${typeof d.score !== 'undefined' ? ` — ${d.score}` : ''}</li>`;
+    }).join('');
+
+    const components = data.score_breakdown?.components || [];
+    document.getElementById('riskBreakdown').innerHTML = components.map(c => {
+      const score = typeof c.capped_score !== 'undefined' ? c.capped_score : c.raw_score;
+      return `<li>${c.name}: ${c.count} × ${c.weight} = ${score}</li>`;
+    }).join('');
+
     output.classList.add('show');
   } catch (e) {
     document.getElementById('riskLevel').textContent = 'Error';
     document.getElementById('riskScore').textContent = 'Could not fetch risk data.';
+    document.getElementById('riskResolved').textContent = '';
     document.getElementById('riskConfidence').textContent = '';
     document.getElementById('riskDrivers').innerHTML = '';
+    document.getElementById('riskBreakdown').innerHTML = '';
     output.classList.add('show');
   }
 }
@@ -62,6 +86,21 @@ async function cityAutocomplete(query) {
   if (!query || query.length < 2) return [];
   const res = await fetch(`/api/cities?q=${encodeURIComponent(query)}`);
   return await res.json();
+}
+
+async function zipToCitySuggestion(query) {
+  if (!/^\d{5}$/.test(query)) return [];
+  try {
+    const res = await fetch(`https://api.zippopotam.us/us/${query}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const place = (data.places || [])[0];
+    if (!place) return [];
+    const city = `${place['place name']}, ${place['state abbreviation']}`;
+    return [city];
+  } catch (_) {
+    return [];
+  }
 }
 
 function setupAutocomplete() {
@@ -75,12 +114,16 @@ function setupAutocomplete() {
       box.style.display = 'none';
       return;
     }
-    const cities = await cityAutocomplete(q);
-    if (!cities.length) {
+    const [cities, zipSuggestion] = await Promise.all([
+      cityAutocomplete(q),
+      zipToCitySuggestion(q),
+    ]);
+    const combined = [...zipSuggestion, ...cities.filter(c => !zipSuggestion.includes(c))];
+    if (!combined.length) {
       box.style.display = 'none';
       return;
     }
-    box.innerHTML = cities.slice(0, 10).map(city => `<div class="autocomplete-item" data-city="${city}">${city}</div>`).join('');
+    box.innerHTML = combined.slice(0, 10).map(city => `<div class="autocomplete-item" data-city="${city}">${city}</div>`).join('');
     box.style.display = 'block';
   });
 

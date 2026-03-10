@@ -1,4 +1,8 @@
 import os
+import re
+import json
+from urllib.request import urlopen
+from urllib.error import URLError
 from flask import Flask, Response, render_template, request, jsonify, redirect
 from calculator import (
     get_risk_for_city,
@@ -18,6 +22,29 @@ from calculator import (
 import pandas as pd
 
 app = Flask(__name__)
+
+
+def resolve_location_input(raw_input: str) -> str:
+    """Accept city text or US ZIP code and normalize to city/state when possible."""
+    value = (raw_input or '').strip()
+    if not re.fullmatch(r'\d{5}', value):
+        return value
+
+    try:
+        with urlopen(f'https://api.zippopotam.us/us/{value}', timeout=2.5) as resp:
+            payload = json.loads(resp.read().decode('utf-8'))
+        places = payload.get('places') or []
+        if not places:
+            return value
+        place = places[0]
+        city = (place.get('place name') or '').strip()
+        state = (place.get('state abbreviation') or '').strip()
+        if city and state:
+            return f"{city}, {state}"
+    except (URLError, TimeoutError, ValueError, json.JSONDecodeError):
+        pass
+
+    return value
 
 @app.route('/')
 def index():
@@ -94,15 +121,23 @@ def api_check_post():
     city = data.get('city', '').strip()
 
     if not city:
-        return jsonify({'error': 'City name required'}), 400
+        return jsonify({'error': 'City or ZIP required'}), 400
 
-    risk_data = get_risk_for_city(city)
+    resolved_city = resolve_location_input(city)
+    risk_data = get_risk_for_city(resolved_city)
+    if isinstance(risk_data, dict):
+        risk_data['query_input'] = city
+        risk_data['resolved_location'] = resolved_city
     return jsonify(risk_data)
 
 @app.route('/api/check/<city>')
 def api_check_get(city):
     """API endpoint for programmatic access (GET with URL param)"""
-    risk_data = get_risk_for_city(city)
+    resolved_city = resolve_location_input(city)
+    risk_data = get_risk_for_city(resolved_city)
+    if isinstance(risk_data, dict):
+        risk_data['query_input'] = city
+        risk_data['resolved_location'] = resolved_city
     return jsonify(risk_data)
 
 @app.route('/cities')
