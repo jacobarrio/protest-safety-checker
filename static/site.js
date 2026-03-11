@@ -15,7 +15,7 @@ async function loadMeta() {
     const u = document.getElementById('metaUpdated');
     if (i) i.textContent = incidentCount;
     if (c) c.textContent = cityCount;
-    if (u) u.textContent = updated.last_updated || updated.date || 'Unknown';
+    if (u) u.textContent = updated.display || updated.time_str || updated.timestamp || 'Unknown';
   } catch (_) {}
 }
 
