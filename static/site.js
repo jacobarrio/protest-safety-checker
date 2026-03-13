@@ -146,6 +146,137 @@ function setupAutocomplete() {
   });
 }
 
+let mapStates = [];
+let mapMeta = {};
+let mapMetric = 'count';
+
+function renderMoverBadges(movers) {
+  const container = document.getElementById('stateMoverBadges');
+  if (!container) return;
+  if (!movers || !movers.length) {
+    container.innerHTML = '<span class="muted">No recent trend spikes detected.</span>';
+    return;
+  }
+
+  container.innerHTML = movers.slice(0, 5).map(item => {
+    const delta = Number(item.delta30 || 0);
+    const cls = delta > 0 ? 'badge up' : (delta < 0 ? 'badge down' : 'badge flat');
+    const sign = delta > 0 ? '+' : '';
+    return `<span class="${cls}">${item.state} ${sign}${delta}</span>`;
+  }).join('');
+}
+
+async function loadStateCities(state) {
+  const list = document.getElementById('stateCityList');
+  const note = document.getElementById('stateQuickNote');
+  if (!list) return;
+
+  list.innerHTML = '<li class="muted">Loading cities…</li>';
+  try {
+    const res = await fetch(`/api/state-cities?state=${encodeURIComponent(state)}`);
+    const payload = await res.json();
+    const cities = payload.cities || [];
+
+    if (note) {
+      note.textContent = `${state} selected. Quick picks are the highest-volume cities in this dataset.`;
+    }
+
+    if (!cities.length) {
+      list.innerHTML = `<li class="muted">No city suggestions available for ${state} yet.</li>`;
+      return;
+    }
+
+    list.innerHTML = cities.map(item => (
+      `<li><button type="button" class="city-jump" data-city="${item.location}">${item.location}</button> <span class="muted">(${item.incidents})</span></li>`
+    )).join('');
+
+    list.querySelectorAll('.city-jump').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById('cityInput');
+        if (!input) return;
+        input.value = btn.dataset.city || '';
+        checkRisk();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
+  } catch (_) {
+    list.innerHTML = `<li class="muted">Could not load city suggestions for ${state}.</li>`;
+  }
+}
+
+async function drawMap() {
+  const chart = document.getElementById('usMapChart');
+  const summary = document.getElementById('mapSummary');
+  if (!chart || typeof Plotly === 'undefined' || !mapStates.length) return;
+
+  const isRecent = mapMetric === 'recent30';
+  const values = mapStates.map(s => isRecent ? (s.recent30 ?? 0) : (s.count ?? 0));
+  const label = isRecent ? 'Recent 30d incidents' : 'All-time incidents';
+
+  await Plotly.newPlot(chart, [{
+    type: 'choropleth',
+    locationmode: 'USA-states',
+    locations: mapStates.map(s => s.state),
+    z: values,
+    text: mapStates.map(s => `${s.state}: ${isRecent ? (s.recent30 ?? 0) : (s.count ?? 0)} incidents`),
+    colorscale: [
+      [0, '#11273a'],
+      [0.35, '#1d5c74'],
+      [0.7, '#20b98e'],
+      [1, '#7fffd4']
+    ],
+    marker: { line: { color: '#0b1219', width: 0.8 } },
+    colorbar: { title: label, color: '#95a8be' },
+    hovertemplate: '%{text}<extra></extra>'
+  }], {
+    geo: {
+      scope: 'usa',
+      bgcolor: 'rgba(0,0,0,0)',
+      lakecolor: 'rgba(0,0,0,0)',
+      showlakes: false,
+      showcountries: false,
+      subunitcolor: '#223345'
+    },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 0, r: 0, b: 0, l: 0 },
+    font: { color: '#e7f0fb', family: 'Inter, sans-serif' }
+  }, { responsive: true, displayModeBar: false });
+
+  if (summary) {
+    const recent = mapMeta.recent30 ?? 0;
+    const prev = mapMeta.prev30 ?? 0;
+    const delta = recent - prev;
+    const sign = delta > 0 ? '+' : '';
+    summary.textContent = `${mapMeta.totalIncidents ?? 0} incidents across ${mapMeta.totalStates ?? 0} states · 30d trend ${sign}${delta}`;
+  }
+
+  const movers = (mapMeta.topMovers || []).filter(m => (m.delta30 || 0) !== 0);
+  renderMoverBadges(movers);
+
+  chart.on('plotly_click', (event) => {
+    const point = event?.points?.[0];
+    const state = point?.location;
+    if (state) loadStateCities(state);
+  });
+}
+
+function setupMapControls() {
+  const totalBtn = document.getElementById('metricTotalBtn');
+  const recentBtn = document.getElementById('metricRecentBtn');
+  if (!totalBtn || !recentBtn) return;
+
+  const setActive = (metric) => {
+    mapMetric = metric;
+    totalBtn.classList.toggle('active', metric === 'count');
+    recentBtn.classList.toggle('active', metric === 'recent30');
+    drawMap();
+  };
+
+  totalBtn.addEventListener('click', () => setActive('count'));
+  recentBtn.addEventListener('click', () => setActive('recent30'));
+}
+
 async function loadMap() {
   const chart = document.getElementById('usMapChart');
   const summary = document.getElementById('mapSummary');
@@ -154,49 +285,17 @@ async function loadMap() {
   try {
     const res = await fetch('/api/us-map');
     const payload = await res.json();
-    const states = payload.states || [];
-    const meta = payload.summary || {};
+    mapStates = payload.states || [];
+    mapMeta = payload.summary || {};
 
-    if (!states.length) {
+    if (!mapStates.length) {
       if (summary) summary.textContent = 'Map data unavailable right now.';
       chart.innerHTML = '<div class="muted">Map data unavailable right now.</div>';
       return;
     }
 
-    await Plotly.newPlot(chart, [{
-      type: 'choropleth',
-      locationmode: 'USA-states',
-      locations: states.map(s => s.state),
-      z: states.map(s => s.count),
-      text: states.map(s => `${s.state}: ${s.count} incidents`),
-      colorscale: [
-        [0, '#11273a'],
-        [0.35, '#1d5c74'],
-        [0.7, '#20b98e'],
-        [1, '#7fffd4']
-      ],
-      marker: { line: { color: '#0b1219', width: 0.8 } },
-      colorbar: { title: 'Incidents', color: '#95a8be' },
-      hovertemplate: '%{text}<extra></extra>'
-    }], {
-      geo: {
-        scope: 'usa',
-        bgcolor: 'rgba(0,0,0,0)',
-        lakecolor: 'rgba(0,0,0,0)',
-        showlakes: false,
-        showcountries: false,
-        subunitcolor: '#223345'
-      },
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      margin: { t: 0, r: 0, b: 0, l: 0 },
-      font: { color: '#e7f0fb', family: 'Inter, sans-serif' }
-    }, { responsive: true, displayModeBar: false });
-
-    const movers = (meta.topMovers || []).slice(0, 3).map(item => `${item.state} (${item.delta30 >= 0 ? '+' : ''}${item.delta30})`).join(' · ');
-    if (summary) {
-      summary.textContent = `${meta.totalIncidents ?? 0} incidents across ${meta.totalStates ?? 0} states` + (movers ? ` · Biggest 30-day movers: ${movers}` : '');
-    }
+    setupMapControls();
+    await drawMap();
   } catch (_) {
     if (summary) summary.textContent = 'Map data unavailable right now.';
     chart.innerHTML = '<div class="muted">Map data unavailable right now.</div>';

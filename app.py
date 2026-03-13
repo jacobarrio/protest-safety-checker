@@ -18,6 +18,7 @@ from calculator import (
     get_us_state_incident_counts,
     get_detention_death_tracker,
     get_contractor_tracker_data,
+    get_state_city_suggestions,
 )
 import pandas as pd
 
@@ -214,6 +215,12 @@ def api_timeline():
 def api_us_map():
     """US state-level incident footprint for homepage map."""
     return jsonify(get_us_state_incident_counts())
+
+@app.route('/api/state-cities')
+def api_state_cities():
+    """Top city suggestions for a selected state."""
+    state = request.args.get('state', '').strip().upper()
+    return jsonify(get_state_city_suggestions(state=state, limit=8))
 
 @app.route('/api/death-tracker')
 def api_death_tracker():

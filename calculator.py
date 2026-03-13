@@ -563,6 +563,35 @@ def get_us_state_incident_counts(csv_path='protest_data_oversight.csv'):
         return {"states": [], "summary": {"totalStates": 0, "totalIncidents": 0}}
 
 
+def get_state_city_suggestions(state, csv_path='protest_data_oversight.csv', limit=8):
+    """Return top cities for a state code so map clicks can drive quick checks."""
+    try:
+        if not re.fullmatch(r'[A-Z]{2}', str(state or '').upper()):
+            return {'state': state, 'cities': []}
+
+        df = _read_incident_csv(csv_path)
+        counts = {}
+
+        for raw in df.get('location', pd.Series(dtype=str)).astype(str):
+            parts = [p.strip() for p in raw.split(',')]
+            if len(parts) < 2:
+                continue
+            st = parts[-1].upper()
+            city = ', '.join(parts[:-1]).strip()
+            if st != state or not city:
+                continue
+            label = f"{city}, {st}"
+            counts[label] = counts.get(label, 0) + 1
+
+        ranked = sorted(counts.items(), key=lambda x: (-x[1], x[0]))[:max(1, int(limit))]
+        return {
+            'state': state,
+            'cities': [{'location': loc, 'incidents': int(ct)} for loc, ct in ranked]
+        }
+    except Exception:
+        return {'state': state, 'cities': []}
+
+
 def get_detention_death_tracker(csv_path='protest_data_oversight.csv', deaths_csv_path='data/detention_deaths.csv'):
     """Track detention-linked deaths with preference for structured death dataset."""
     try:

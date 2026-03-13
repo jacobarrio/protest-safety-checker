@@ -214,6 +214,17 @@ input[type=text]:focus { outline: 2px solid rgba(33, 212, 162, 0.22); outline-of
   text-align: right;
   font-size: 14px;
 }
+.map-controls {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 10px;
+  flex-wrap: wrap;
+}
+.map-toggle.active {
+  border-color: var(--accent-dark);
+  background: rgba(33, 212, 162, 0.14);
+}
+
 .map-chart {
   min-height: 320px;
   width: 100%;
@@ -222,6 +233,32 @@ input[type=text]:focus { outline: 2px solid rgba(33, 212, 162, 0.22); outline-of
   background: linear-gradient(180deg, #08111a, #0c131b);
   padding: 6px;
 }
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.badge {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+.badge.up { border-color: #1f8f6f; color: #7fffd4; }
+.badge.down { border-color: #7a3a4a; color: #ff9aa9; }
+.badge.flat { border-color: #35516f; color: #b7cadf; }
+
+.city-jump {
+  border: 0;
+  background: transparent;
+  color: #8ec8ff;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+}
+.city-jump:hover { color: #b9ddff; }
 
 .method-detail {
   margin-top: 10px;

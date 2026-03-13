@@ -3,9 +3,9 @@
 
 {% block content %}
 <section class="hero">
-  <div class="eyebrow">PUBLIC DATA · RAPID SAFETY CHECK</div>
-  <h1>Check local ICE activity signal before you plan</h1>
-  <p class="sub">Fast location-based risk signal from public records. Use it as a planning aid, then verify with local intel.</p>
+  <div class="eyebrow">PUBLIC DATA · QUICK SAFETY SIGNAL</div>
+  <h1>Get a fast read before you head out</h1>
+  <p class="sub">Type a city or ZIP and get a quick risk signal. Then sanity-check it with local people and real-time updates.</p>
   <div class="btn-group">
     <button class="btn" onclick="checkRisk()">Run Risk Check</button>
     <a class="btn secondary" href="/methodology">How it works</a>
@@ -19,7 +19,7 @@
 
   <div class="sample">
     <div class="title">Use in 10 seconds</div>
-    <p class="muted" style="margin:0;">Check city → decide route/timing/comms backup.</p>
+    <p class="muted" style="margin:0;">Check city → decide route, timing, and backup comms.</p>
   </div>
 
   <div id="riskResult" class="card result">
@@ -77,11 +77,31 @@
   <div class="map-header">
     <div>
       <h2>National incident map</h2>
-      <p class="sub" style="margin-bottom:0;">Quick state-level orientation map.</p>
+      <p class="sub" style="margin-bottom:0;">Click a state to pull suggested cities for a quick check.</p>
     </div>
     <div id="mapSummary" class="map-summary muted">Loading map…</div>
   </div>
+
+  <div class="map-controls" role="group" aria-label="Map metric toggle">
+    <button id="metricTotalBtn" class="btn secondary map-toggle active" type="button">All-time incidents</button>
+    <button id="metricRecentBtn" class="btn secondary map-toggle" type="button">Recent 30 days</button>
+  </div>
+
   <div id="usMapChart" class="map-chart" aria-label="United States incident map"></div>
+
+  <div class="grid cols-2" style="margin-top:12px;">
+    <div class="kpi">
+      <div class="label">Fast state insight</div>
+      <div id="stateQuickNote" class="muted" style="margin-top:8px;font-size:14px;">Tip: click a state on the map to see where activity is concentrated.</div>
+      <div id="stateMoverBadges" class="badge-row" style="margin-top:10px;"></div>
+    </div>
+    <div class="kpi">
+      <div class="label">Cities in selected state</div>
+      <ul id="stateCityList" class="list" style="margin-top:8px;">
+        <li class="muted">No state selected yet.</li>
+      </ul>
+    </div>
+  </div>
 </section>
 
 <section class="card" style="margin-top:12px;">
