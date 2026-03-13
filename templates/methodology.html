@@ -2,24 +2,31 @@
 {% block title %}Methodology — ICE Risk Tracker{% endblock %}
 {% block content %}
 <section class="card">
-  <h1>Methodology (Plain Language)</h1>
-  <p class="sub">Transparent enough for trust. Simple enough to use under pressure.</p>
-  <h2>Scoring inputs</h2>
-  <ul class="list">
-    <li>Recent incident frequency and trajectory</li>
-    <li>Historical intensity patterns by location</li>
-    <li>Detention/facility-adjacent signal factors</li>
-    <li>Contextual weighting from oversight-linked records</li>
-  </ul>
-</section>
+  <h1>Methodology</h1>
+  <p class="sub">Everything here is organized for quick scanning.</p>
 
-<section class="card" style="margin-top:12px;">
-  <h2>Confidence and limits</h2>
-  <ul class="list">
-    <li>Confidence is higher where coverage is denser and more recent.</li>
-    <li>Low-data areas may understate or overstate true conditions.</li>
-    <li>Rapid policy and operational shifts can change risk faster than datasets update.</li>
-  </ul>
-  <p class="muted">Always combine this score with local observer reports and legal support context.</p>
+  <details open class="method-detail">
+    <summary>How scoring works (30s)</summary>
+    <ul class="list">
+      <li>Counts incident patterns by location.</li>
+      <li>Weights recent activity and trend direction.</li>
+      <li>Adds detention/facility-related signals from the dataset.</li>
+    </ul>
+  </details>
+
+  <details class="method-detail">
+    <summary>Source links (cross-reference)</summary>
+    <ul class="list">
+      <li><a href="https://democrats-oversight.house.gov/landing/investigating-ice-and-immigration" target="_blank" rel="noopener">House Oversight records</a></li>
+      <li><a href="https://www.ice.gov/detain/detention-management" target="_blank" rel="noopener">ICE detention management</a></li>
+      <li><a href="https://www.ice.gov/news/releases" target="_blank" rel="noopener">ICE releases</a> · <a href="https://www.dhs.gov/news-releases" target="_blank" rel="noopener">DHS releases</a></li>
+      <li><a href="/detention-facilities">Detention-linked incidents</a> · <a href="/intel">Intel dashboard</a></li>
+    </ul>
+  </details>
+
+  <details class="method-detail">
+    <summary>AI disclosure</summary>
+    <p class="muted">AI may be used in limited, non-critical support work (like copy drafting). Risk scoring itself is rules/data-driven, not AI decision-making.</p>
+  </details>
 </section>
 {% endblock %}

@@ -146,7 +146,65 @@ function setupAutocomplete() {
   });
 }
 
+async function loadMap() {
+  const chart = document.getElementById('usMapChart');
+  const summary = document.getElementById('mapSummary');
+  if (!chart || typeof Plotly === 'undefined') return;
+
+  try {
+    const res = await fetch('/api/us-map');
+    const payload = await res.json();
+    const states = payload.states || [];
+    const meta = payload.summary || {};
+
+    if (!states.length) {
+      if (summary) summary.textContent = 'Map data unavailable right now.';
+      chart.innerHTML = '<div class="muted">Map data unavailable right now.</div>';
+      return;
+    }
+
+    await Plotly.newPlot(chart, [{
+      type: 'choropleth',
+      locationmode: 'USA-states',
+      locations: states.map(s => s.state),
+      z: states.map(s => s.count),
+      text: states.map(s => `${s.state}: ${s.count} incidents`),
+      colorscale: [
+        [0, '#11273a'],
+        [0.35, '#1d5c74'],
+        [0.7, '#20b98e'],
+        [1, '#7fffd4']
+      ],
+      marker: { line: { color: '#0b1219', width: 0.8 } },
+      colorbar: { title: 'Incidents', color: '#95a8be' },
+      hovertemplate: '%{text}<extra></extra>'
+    }], {
+      geo: {
+        scope: 'usa',
+        bgcolor: 'rgba(0,0,0,0)',
+        lakecolor: 'rgba(0,0,0,0)',
+        showlakes: false,
+        showcountries: false,
+        subunitcolor: '#223345'
+      },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      margin: { t: 0, r: 0, b: 0, l: 0 },
+      font: { color: '#e7f0fb', family: 'Inter, sans-serif' }
+    }, { responsive: true, displayModeBar: false });
+
+    const movers = (meta.topMovers || []).slice(0, 3).map(item => `${item.state} (${item.delta30 >= 0 ? '+' : ''}${item.delta30})`).join(' · ');
+    if (summary) {
+      summary.textContent = `${meta.totalIncidents ?? 0} incidents across ${meta.totalStates ?? 0} states` + (movers ? ` · Biggest 30-day movers: ${movers}` : '');
+    }
+  } catch (_) {
+    if (summary) summary.textContent = 'Map data unavailable right now.';
+    chart.innerHTML = '<div class="muted">Map data unavailable right now.</div>';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadMeta();
   setupAutocomplete();
+  loadMap();
 });

@@ -3,12 +3,12 @@
 
 {% block content %}
 <section class="hero">
-  <div class="eyebrow">LIVE INTEL SIGNAL · PUBLIC DATA</div>
-  <h1>Fast ICE risk signal check for protest planning</h1>
-  <p class="sub">Get a location-level risk estimate in under a minute. Built for organizers who need actionable signal, not dashboard overload.</p>
+  <div class="eyebrow">PUBLIC DATA · RAPID SAFETY CHECK</div>
+  <h1>Check local ICE activity signal before you plan</h1>
+  <p class="sub">Fast location-based risk signal from public records. Use it as a planning aid, then verify with local intel.</p>
   <div class="btn-group">
     <button class="btn" onclick="checkRisk()">Run Risk Check</button>
-    <a class="btn secondary" href="/methodology">See Methodology</a>
+    <a class="btn secondary" href="/methodology">How it works</a>
   </div>
 
   <div class="search-row" style="margin-top:14px;">
@@ -18,8 +18,8 @@
   </div>
 
   <div class="sample">
-    <div class="title">Immediate next move</div>
-    <p class="muted" style="margin:0;">Run a city check, then choose one mitigation: route change, timing shift, or comms fallback.</p>
+    <div class="title">Use in 10 seconds</div>
+    <p class="muted" style="margin:0;">Check city → decide route/timing/comms backup.</p>
   </div>
 
   <div id="riskResult" class="card result">
@@ -57,10 +57,31 @@
   </div>
 </section>
 
-<section class="trust-strip">
-  <div class="trust-item"><strong>Sources:</strong> Public-source incident, oversight, and detention-linked records.</div>
-  <div class="trust-item"><strong>Cadence:</strong> Regular updates; always verify with local ground intel before action.</div>
-  <div class="trust-item"><strong>Privacy:</strong> No account required for basic checks. Don’t enter sensitive identities.</div>
+<section class="grid cols-3" style="margin-top:12px;">
+  <div class="kpi">
+    <div class="label">Sources</div>
+    <div class="muted" style="margin-top:8px;font-size:14px;">Clear source links + cross-reference path.</div>
+    <a href="/methodology" style="display:inline-block;margin-top:8px;">View source list →</a>
+  </div>
+  <div class="kpi">
+    <div class="label">AI Use</div>
+    <div class="muted" style="margin-top:8px;font-size:14px;">Limited, non-critical support only. Scoring is rules/data-driven.</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Privacy</div>
+    <div class="muted" style="margin-top:8px;font-size:14px;">Don’t enter names, IDs, or sensitive details.</div>
+  </div>
+</section>
+
+<section class="card map-card" style="margin-top:12px;">
+  <div class="map-header">
+    <div>
+      <h2>National incident map</h2>
+      <p class="sub" style="margin-bottom:0;">Quick state-level orientation map.</p>
+    </div>
+    <div id="mapSummary" class="map-summary muted">Loading map…</div>
+  </div>
+  <div id="usMapChart" class="map-chart" aria-label="United States incident map"></div>
 </section>
 
 <section class="card" style="margin-top:12px;">
@@ -85,5 +106,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="/static/site.js"></script>
 {% endblock %}
