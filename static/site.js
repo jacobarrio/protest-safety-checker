@@ -19,6 +19,109 @@ async function loadMeta() {
   } catch (_) {}
 }
 
+let currentRole = 'organizer';
+
+function getRoleLabel(role) {
+  return {
+    organizer: 'Organizer',
+    legal: 'Legal Observer',
+    journalist: 'Journalist',
+    public: 'General Public',
+  }[role] || 'Organizer';
+}
+
+function buildPlan(data, role) {
+  const level = (data.risk_level || '').toLowerCase();
+  const high = level === 'high';
+  const medium = level === 'medium';
+
+  const baseNow = high
+    ? ['Switch to lower-exposure route now.', 'Move legal + de-escalation roles to front.', 'Push comms check-in every 10 minutes.']
+    : medium
+      ? ['Keep your group tight and visible.', 'Set one rally fallback point.', 'Run a 15-minute check-in loop.']
+      : ['Keep normal safety roles active.', 'Confirm meetup and exits before movement.', 'Re-check risk if conditions shift.'];
+
+  const baseAvoid = high
+    ? ['Do not post live location publicly.', 'Do not split people without comms.', 'Do not rely on one route out.']
+    : medium
+      ? ['Avoid unnecessary linger points.', 'Avoid publishing faces in real time.', 'Avoid single-point comms failure.']
+      : ['Avoid complacency.', 'Avoid sharing sensitive info in open chat.', 'Avoid skipping buddy check-ins.'];
+
+  const roleAdd = {
+    organizer: {
+      now: ['Assign one person to route updates.', 'Prep a regroup message before movement.'],
+      avoid: ['Do not change plan without broadcasting it clearly.']
+    },
+    legal: {
+      now: ['Start timestamped observation notes now.', 'Confirm witness handoff channel.'],
+      avoid: ['Do not operate without a clear observation lane.']
+    },
+    journalist: {
+      now: ['Capture context shots before close coverage.', 'Keep one backup uploader offsite.'],
+      avoid: ['Do not publish identifying faces without review.']
+    },
+    public: {
+      now: ['Share your check-in plan with one trusted contact.', 'Keep emergency contacts pinned.'],
+      avoid: ['Do not go alone without a comms plan.']
+    }
+  };
+
+  const extra = roleAdd[role] || roleAdd.organizer;
+  const now = [...baseNow, ...extra.now].slice(0, 4);
+  const avoid = [...baseAvoid, ...extra.avoid].slice(0, 4);
+
+  const city = data.resolved_location || data.query_input || 'this area';
+  const intro = `${getRoleLabel(role)} mode · ${data.risk_level || 'Unknown'} risk in ${city}. Do the next 30 minutes deliberately.`;
+  const share = `${getRoleLabel(role)} plan for ${city}\nRisk: ${data.risk_level || 'Unknown'} (${data.risk_score ?? '—'}/100)\nDo now: ${now.join(' | ')}\nAvoid: ${avoid.join(' | ')}`;
+
+  return { intro, now, avoid, share };
+}
+
+function renderPlan(plan) {
+  const intro = document.getElementById('planIntro');
+  const now = document.getElementById('planNow');
+  const avoid = document.getElementById('planAvoid');
+  const share = document.getElementById('planShare');
+
+  if (intro) intro.textContent = plan.intro;
+  if (now) now.innerHTML = plan.now.map(x => `<li>${x}</li>`).join('');
+  if (avoid) avoid.innerHTML = plan.avoid.map(x => `<li>${x}</li>`).join('');
+  if (share) share.value = plan.share;
+}
+
+function setupRoleChips() {
+  const chips = Array.from(document.querySelectorAll('.role-chip'));
+  if (!chips.length) return;
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      currentRole = chip.dataset.role || 'organizer';
+      chips.forEach(c => c.classList.toggle('active', c === chip));
+      const visible = document.getElementById('riskResult')?.classList.contains('show');
+      if (visible) checkRisk();
+    });
+  });
+}
+
+function setupCopyPlan() {
+  const btn = document.getElementById('copyPlanBtn');
+  const box = document.getElementById('planShare');
+  if (!btn || !box) return;
+
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(box.value || '');
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = 'Copy plan text'; }, 1000);
+    } catch (_) {
+      box.select();
+      document.execCommand('copy');
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = 'Copy plan text'; }, 1000);
+    }
+  });
+}
+
 async function checkRisk() {
   const cityInput = document.getElementById('cityInput');
   const output = document.getElementById('riskResult');
@@ -70,6 +173,9 @@ async function checkRisk() {
       return `<li>${c.name}: ${c.count} × ${c.weight} = ${score}</li>`;
     }).join('');
 
+    const plan = buildPlan(data, currentRole);
+    renderPlan(plan);
+
     output.classList.add('show');
   } catch (e) {
     document.getElementById('riskLevel').textContent = 'Error';
@@ -78,6 +184,12 @@ async function checkRisk() {
     document.getElementById('riskConfidence').textContent = '';
     document.getElementById('riskDrivers').innerHTML = '';
     document.getElementById('riskBreakdown').innerHTML = '';
+    renderPlan({
+      intro: 'Could not generate a plan from this query. Try a nearby city.',
+      now: ['Retry with city + state format.', 'Check local channels for updates.'],
+      avoid: ['Avoid acting on stale assumptions.'],
+      share: 'Plan unavailable right now. Re-run with a clearer location.'
+    });
     output.classList.add('show');
   }
 }
@@ -305,5 +417,7 @@ async function loadMap() {
 document.addEventListener('DOMContentLoaded', () => {
   loadMeta();
   setupAutocomplete();
+  setupRoleChips();
+  setupCopyPlan();
   loadMap();
 });

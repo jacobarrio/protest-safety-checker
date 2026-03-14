@@ -17,6 +17,14 @@
     <div id="autocomplete"></div>
   </div>
 
+  <div class="role-row">
+    <span class="muted">Mode:</span>
+    <button class="role-chip active" data-role="organizer" type="button">Organizer</button>
+    <button class="role-chip" data-role="legal" type="button">Legal Observer</button>
+    <button class="role-chip" data-role="journalist" type="button">Journalist</button>
+    <button class="role-chip" data-role="public" type="button">General Public</button>
+  </div>
+
   <div class="sample">
     <div class="title">Use in 10 seconds</div>
     <p class="muted" style="margin:0;">Check city → decide route, timing, and backup comms.</p>
@@ -39,6 +47,26 @@
 
     <h3 style="margin-top:14px;margin-bottom:8px;">Score breakdown</h3>
     <ul id="riskBreakdown" class="list"></ul>
+
+    <section class="plan-box" style="margin-top:14px;">
+      <h3 style="margin-top:0;margin-bottom:8px;">30-minute action plan</h3>
+      <p id="planIntro" class="muted">Run a check to generate an actionable plan.</p>
+      <div class="grid cols-2" style="margin-top:8px;">
+        <div>
+          <h4 style="margin:0 0 6px;">Do now</h4>
+          <ul id="planNow" class="list"></ul>
+        </div>
+        <div>
+          <h4 style="margin:0 0 6px;">Avoid right now</h4>
+          <ul id="planAvoid" class="list"></ul>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <label for="planShare" class="muted">Share-ready text</label>
+        <textarea id="planShare" class="plan-share" readonly></textarea>
+        <button id="copyPlanBtn" class="btn secondary" type="button">Copy plan text</button>
+      </div>
+    </section>
   </div>
 </section>
 
@@ -120,6 +148,25 @@
         <li><a href="/for-researchers">Research/data context →</a></li>
         <li><a href="/safety-privacy">Safety + privacy practices →</a></li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:12px;">
+  <h2>Portland quick resource starter</h2>
+  <p class="sub">Keep this practical: if risk spikes, know who to call before you need them.</p>
+  <div class="grid cols-3">
+    <div class="kpi">
+      <div class="label">Legal help</div>
+      <div class="muted" style="margin-top:8px;font-size:14px;">ACLU Oregon + local legal observer network.</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Medical support</div>
+      <div class="muted" style="margin-top:8px;font-size:14px;">Street medic contacts and first-aid check team.</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Comms fallback</div>
+      <div class="muted" style="margin-top:8px;font-size:14px;">Secondary Signal group + check-in windows.</div>
     </div>
   </div>
 </section>

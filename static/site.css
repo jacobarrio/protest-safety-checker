@@ -186,6 +186,45 @@ input[type=text]:focus { outline: 2px solid rgba(33, 212, 162, 0.22); outline-of
 }
 .sample .title { font-weight: 700; margin-bottom: 4px; }
 
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.role-chip {
+  border: 1px solid var(--border);
+  background: #0a1119;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.role-chip.active {
+  border-color: var(--accent-dark);
+  background: rgba(33, 212, 162, 0.14);
+}
+
+.plan-box {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: linear-gradient(180deg, #0c131b, #081018);
+}
+.plan-share {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #08111a;
+  color: var(--text);
+  padding: 10px;
+  font: inherit;
+}
+
 .result { margin-top: 12px; display: none; }
 .result.show { display: block; animation: fadeIn .18s ease; }
 @keyframes fadeIn {
