@@ -245,6 +245,47 @@ def get_data_summary(csv_path='protest_data_oversight.csv'):
         }
 
 
+def get_data_integrity_report(csv_path='protest_data_oversight.csv'):
+    """Operational data quality report for transparency + freshness signaling."""
+    try:
+        df = _read_incident_csv(csv_path).copy()
+        total = int(len(df))
+
+        df['date_parsed'] = pd.to_datetime(df.get('date'), errors='coerce')
+        valid_dates = df['date_parsed'].dropna()
+        latest = valid_dates.max() if not valid_dates.empty else None
+
+        now = pd.Timestamp.now(tz=None)
+        days_since_latest = int((now.normalize() - latest.normalize()).days) if pd.notna(latest) else None
+
+        source_series = df.get('source_url', pd.Series(dtype=str)).astype(str)
+        has_http = source_series.str.match(r'^https?://', na=False)
+        source_coverage_pct = round(float(has_http.mean() * 100), 1) if total else 0.0
+
+        key_cols = [c for c in ['date', 'location', 'title', 'source_url'] if c in df.columns]
+        duplicate_rows = int(df.duplicated(subset=key_cols).sum()) if key_cols else 0
+
+        stale_threshold_days = 21
+        status = 'fresh' if (days_since_latest is not None and days_since_latest <= stale_threshold_days) else 'stale'
+
+        return {
+            'status': status,
+            'verified_on': datetime.utcnow().strftime('%Y-%m-%d'),
+            'stale_threshold_days': stale_threshold_days,
+            'days_since_latest': days_since_latest,
+            'latest_incident_date': latest.strftime('%Y-%m-%d') if pd.notna(latest) else None,
+            'total_records': total,
+            'source_url_coverage_pct': source_coverage_pct,
+            'duplicate_rows': duplicate_rows,
+        }
+    except Exception as exc:
+        return {
+            'status': 'unknown',
+            'verified_on': datetime.utcnow().strftime('%Y-%m-%d'),
+            'error': str(exc),
+        }
+
+
 def get_detention_facility_data(csv_path='protest_data_oversight.csv', limit_locations=25):
     """
     Build a detention-related transparency page from available oversight incidents.

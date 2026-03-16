@@ -1,11 +1,13 @@
 async function loadMeta() {
   try {
-    const [summaryRes, updatedRes] = await Promise.all([
+    const [summaryRes, updatedRes, integrityRes] = await Promise.all([
       fetch('/api/data_summary'),
       fetch('/api/last_updated'),
+      fetch('/api/data-integrity'),
     ]);
     const summary = await summaryRes.json();
     const updated = await updatedRes.json();
+    const integrity = await integrityRes.json();
 
     const incidentCount = summary.total_incidents ?? summary.total_records ?? '—';
     const cityCount = summary.unique_locations ?? summary.unique_cities ?? '—';
@@ -16,6 +18,28 @@ async function loadMeta() {
     if (i) i.textContent = incidentCount;
     if (c) c.textContent = cityCount;
     if (u) u.textContent = updated.display || updated.time_str || updated.timestamp || 'Unknown';
+
+    const statusEl = document.getElementById('integrityStatus');
+    const latestEl = document.getElementById('integrityLatest');
+    const verifiedEl = document.getElementById('integrityVerified');
+    const noteEl = document.getElementById('integrityNote');
+
+    if (statusEl) statusEl.textContent = (integrity.status || 'unknown').toUpperCase();
+    if (latestEl) latestEl.textContent = integrity.latest_incident_date || 'Unknown';
+    if (verifiedEl) verifiedEl.textContent = integrity.verified_on || 'Unknown';
+
+    if (noteEl) {
+      const staleDays = integrity.days_since_latest;
+      const coverage = integrity.source_url_coverage_pct;
+      const dupes = integrity.duplicate_rows;
+      if (integrity.status === 'stale') {
+        noteEl.textContent = `Dataset is stale (${staleDays} days since latest incident in dataset). Source URL coverage: ${coverage}% · duplicate rows: ${dupes}.`;
+      } else if (integrity.status === 'fresh') {
+        noteEl.textContent = `Dataset is fresh (${staleDays} days since latest incident). Source URL coverage: ${coverage}% · duplicate rows: ${dupes}.`;
+      } else {
+        noteEl.textContent = 'Integrity status unavailable right now.';
+      }
+    }
   } catch (_) {}
 }
 
@@ -30,45 +54,103 @@ function getRoleLabel(role) {
   }[role] || 'Organizer';
 }
 
+function dedupePlanItems(items, maxItems = 3) {
+  const picked = [];
+  const usedCategories = new Set();
+  const usedText = new Set();
+
+  for (const item of items) {
+    const text = (item.text || '').trim();
+    if (!text) continue;
+    const norm = text.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+    if (usedText.has(norm)) continue;
+
+    if (!usedCategories.has(item.category)) {
+      picked.push(text);
+      usedCategories.add(item.category);
+      usedText.add(norm);
+    }
+
+    if (picked.length >= maxItems) break;
+  }
+
+  if (picked.length < maxItems) {
+    for (const item of items) {
+      const text = (item.text || '').trim();
+      const norm = text.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+      if (!text || usedText.has(norm)) continue;
+      picked.push(text);
+      usedText.add(norm);
+      if (picked.length >= maxItems) break;
+    }
+  }
+
+  return picked;
+}
+
 function buildPlan(data, role) {
   const level = (data.risk_level || '').toLowerCase();
   const high = level === 'high';
   const medium = level === 'medium';
 
   const baseNow = high
-    ? ['Switch to lower-exposure route now.', 'Move legal + de-escalation roles to front.', 'Push comms check-in every 10 minutes.']
+    ? [
+      { category: 'movement', text: 'Switch to a lower-exposure route now.' },
+      { category: 'roles', text: 'Move legal + de-escalation roles to the front.' },
+      { category: 'comms', text: 'Run comms check-ins every 10 minutes.' }
+    ]
     : medium
-      ? ['Keep your group tight and visible.', 'Set one rally fallback point.', 'Run a 15-minute check-in loop.']
-      : ['Keep normal safety roles active.', 'Confirm meetup and exits before movement.', 'Re-check risk if conditions shift.'];
+      ? [
+        { category: 'movement', text: 'Keep your group tight and visible.' },
+        { category: 'fallback', text: 'Set one fallback regroup point.' },
+        { category: 'comms', text: 'Run a 15-minute check-in loop.' }
+      ]
+      : [
+        { category: 'roles', text: 'Keep normal safety roles active.' },
+        { category: 'movement', text: 'Confirm meetup and exits before movement.' },
+        { category: 'monitoring', text: 'Re-check risk if conditions shift.' }
+      ];
 
   const baseAvoid = high
-    ? ['Do not post live location publicly.', 'Do not split people without comms.', 'Do not rely on one route out.']
+    ? [
+      { category: 'exposure', text: 'Do not post your live location publicly.' },
+      { category: 'comms', text: 'Do not split people without comms.' },
+      { category: 'movement', text: 'Do not rely on only one exit route.' }
+    ]
     : medium
-      ? ['Avoid unnecessary linger points.', 'Avoid publishing faces in real time.', 'Avoid single-point comms failure.']
-      : ['Avoid complacency.', 'Avoid sharing sensitive info in open chat.', 'Avoid skipping buddy check-ins.'];
+      ? [
+        { category: 'movement', text: 'Avoid unnecessary linger points.' },
+        { category: 'exposure', text: 'Avoid publishing faces in real time.' },
+        { category: 'comms', text: 'Avoid single-point comms failure.' }
+      ]
+      : [
+        { category: 'complacency', text: 'Avoid complacency.' },
+        { category: 'exposure', text: 'Avoid sharing sensitive details in open chat.' },
+        { category: 'comms', text: 'Avoid skipping buddy check-ins.' }
+      ];
 
   const roleAdd = {
     organizer: {
-      now: ['Assign one person to route updates.', 'Prep a regroup message before movement.'],
-      avoid: ['Do not change plan without broadcasting it clearly.']
+      now: [{ category: 'command', text: 'Assign one person to route updates.' }, { category: 'fallback', text: 'Prep a regroup message before movement.' }],
+      avoid: [{ category: 'command', text: 'Do not change plan without broadcasting it clearly.' }]
     },
     legal: {
-      now: ['Start timestamped observation notes now.', 'Confirm witness handoff channel.'],
-      avoid: ['Do not operate without a clear observation lane.']
+      now: [{ category: 'evidence', text: 'Start timestamped observation notes now.' }, { category: 'handoff', text: 'Confirm witness handoff channel.' }],
+      avoid: [{ category: 'lane', text: 'Do not operate without a clear observation lane.' }]
     },
     journalist: {
-      now: ['Capture context shots before close coverage.', 'Keep one backup uploader offsite.'],
-      avoid: ['Do not publish identifying faces without review.']
+      now: [{ category: 'coverage', text: 'Capture context shots before close coverage.' }, { category: 'backup', text: 'Keep one backup uploader offsite.' }],
+      avoid: [{ category: 'exposure', text: 'Do not publish identifying faces without review.' }]
     },
     public: {
-      now: ['Share your check-in plan with one trusted contact.', 'Keep emergency contacts pinned.'],
-      avoid: ['Do not go alone without a comms plan.']
+      now: [{ category: 'comms', text: 'Share your check-in plan with one trusted contact.' }, { category: 'contacts', text: 'Keep emergency contacts pinned.' }],
+      avoid: [{ category: 'movement', text: 'Do not go alone without a comms plan.' }]
     }
   };
 
   const extra = roleAdd[role] || roleAdd.organizer;
-  const now = [...baseNow, ...extra.now].slice(0, 4);
-  const avoid = [...baseAvoid, ...extra.avoid].slice(0, 4);
+  const now = dedupePlanItems([...baseNow, ...extra.now], 3);
+  const avoid = dedupePlanItems([...baseAvoid, ...extra.avoid], 3);
 
   const city = data.resolved_location || data.query_input || 'this area';
   const intro = `${getRoleLabel(role)} mode · ${data.risk_level || 'Unknown'} risk in ${city}. Do the next 30 minutes deliberately.`;

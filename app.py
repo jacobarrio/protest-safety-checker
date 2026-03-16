@@ -12,6 +12,7 @@ from calculator import (
     search_cities,
     get_detention_facility_data,
     get_data_summary,
+    get_data_integrity_report,
     get_black_site_signals,
     get_spending_analytics,
     get_live_feed,
@@ -170,6 +171,11 @@ def api_last_updated():
 def api_data_summary():
     """Get high-level dataset transparency stats"""
     return jsonify(get_data_summary())
+
+@app.route('/api/data-integrity')
+def api_data_integrity():
+    """Get data freshness + integrity health for trust signaling."""
+    return jsonify(get_data_integrity_report())
 
 @app.route('/detention-facilities')
 def detention_facilities():
