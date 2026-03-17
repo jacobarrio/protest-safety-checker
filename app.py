@@ -4,14 +4,6 @@ import json
 from urllib.request import urlopen
 from urllib.error import URLError
 from flask import Flask, Response, render_template, request, jsonify, redirect
-from field_shield import (
-    ValidationError,
-    add_checkin,
-    add_incident,
-    generate_packet,
-    send_alert,
-    start_session,
-)
 from calculator import (
     get_risk_for_city,
     get_all_cities,
