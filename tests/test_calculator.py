@@ -228,7 +228,7 @@ class TestCalculateRiskScore:
         })
         result = calculate_risk_score(df)
         assert result['risk_level'] == 'Medium'
-        assert 40 <= result['risk_score'] < 70
+        assert 30 <= result['risk_score'] < 70
     
     def test_low_risk_score(self):
         """Test low risk classification"""

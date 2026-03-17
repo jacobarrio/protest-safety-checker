@@ -1,114 +1,102 @@
 # Protest Safety Checker
 
-ICE incident tracker and risk assessment tool using verified data from the House Oversight Democrats Immigration Enforcement Dashboard.
+Public-data risk signal tool for organizers, legal observers, medics, and support teams.
 
-## What It Does
+## Field Shield overview
 
-- **Scrapes 462+ verified ICE incidents** from Congressional oversight data (Nov 2025 - Jan 2026)
-- **Calculates city-specific risk scores** based on:
-  - Use of force incidents
-  - U.S. citizen targeting
-  - Sensitive location operations (schools, hospitals, etc.)
-- **CLI tool** for quick risk assessment
+Field Shield is the operational safety layer for in-field use. Current implementation combines backend and frontend pieces:
 
-## Quick Start
+- **Backend API routes** for Field Shield sessions (`start`, `checkin`, `incident`, `alert`, `packet`)
+- **Risk API privacy controls** (optional query/location redaction)
+- **Status endpoint**: `GET /api/field-shield/status`
+- **Frontend Field Shield mode UI** (`/field-shield`) for field workflows
+- **Cache-hardening option** (`no-store` headers when enabled)
+
+This is a practical v0.1 baseline for safer operations, not a complete security system.
+
+## Quick start
+
 ```bash
-# Check risk for your city
-python3 protest_checker.py Portland
-python3 protest_checker.py "Los Angeles"
-python3 protest_checker.py Minneapolis
-```
-
-## Example Output
-```
-🔴 RISK LEVEL: High
-   Risk Score: 90/100
-
-📊 INCIDENT STATISTICS:
-   Total incidents: 21
-   Use of Force: 12 (57.1%)
-   U.S. Citizens targeted: 8 (38.1%)
-   Sensitive Locations: 4 (19.0%)
-
-📰 RECENT INCIDENTS:
-   1. [01/23/2026] Asylum seeker detained by ICE...
-   2. [01/22/2026] Masked agents detain civil engineer...
-```
-
-## Installation
-```bash
-# Clone repo
 git clone https://github.com/jacobarrio/protest-safety-checker.git
 cd protest-safety-checker
-
-# Install dependencies
-pip install selenium pandas beautifulsoup4 --break-system-packages
-
-# Install Chrome/Chromium
-sudo apt install chromium-browser chromium-chromedriver
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 app.py
 ```
 
-## Data Source
+Open: `http://localhost:5000`
 
-**House Oversight Democrats Immigration Enforcement Dashboard**
-- Official Congressional oversight data
-- 462+ verified incidents from reputable news sources
-- Covers Nov 2025 - Jan 2026
-- Categories: Use of Force, Arrest/Detention, U.S. Citizen, Sensitive Locations, Deportation
+## Setup / environment variables
 
-## Files
+### Core
 
-- `scrape_oversight_selenium.py` - Scraper (gets latest data)
-- `calculator.py` - Risk scoring algorithm
-- `protest_checker.py` - CLI interface
-- `protest_data_oversight.csv` - Current dataset
+- `PORT` (default: `5000`)
 
-## Update Data
+### Field Shield controls
+
+- `FIELD_SHIELD_ENABLED` (`true|false`, default `false`)
+- `FIELD_SHIELD_MODE` (`balanced|strict`, default `balanced`)
+- `FIELD_SHIELD_REDACT_USER_INPUT` (`true|false`, default `true`)
+- `FIELD_SHIELD_NO_STORE_HEADERS` (`true|false`, default `true`)
+
+Example:
+
 ```bash
-python3 scrape_oversight_selenium.py
+export FIELD_SHIELD_ENABLED=true
+export FIELD_SHIELD_MODE=balanced
+export FIELD_SHIELD_REDACT_USER_INPUT=true
+export FIELD_SHIELD_NO_STORE_HEADERS=true
+python3 app.py
 ```
 
-Scrapes latest incidents from dashboard (~1-2 minutes).
+## Threat model notes
+
+Field Shield is meant to reduce common operational mistakes, especially accidental leakage.
+
+### In-scope (v0.1)
+
+- Reduce accidental query/location echo in API responses
+- Reduce browser/proxy cache persistence when enabled
+- Support structured field operations workflow through dedicated endpoints/UI
+
+### Out-of-scope (v0.1)
+
+- Full anonymity guarantees
+- Device compromise protection
+- Strong authz/RBAC model for all routes
+- End-to-end encrypted multi-party coordination
+
+Treat outputs as advisory. Always cross-check live local conditions.
+
+## Data retention + privacy guidance
+
+Recommended deployment posture:
+
+- Avoid logging request bodies for `/api/check` and Field Shield write endpoints
+- Keep access logs short-lived and rotated
+- Do not store names, IDs, or identifying field notes unless legally necessary
+- Use HTTPS in transit and encrypted storage at rest
+- Publish a short public privacy notice (collection, retention, deletion windows)
+
+Operational guidance for users:
+
+- Do **not** paste names, IDs, plate numbers, or private plans into the app
+- Use coarse locations whenever possible
+- Assume compromised-device risk and plan fallback channels
 
 ## Testing
 
-Comprehensive test suite included to ensure reliability.
-
-### Run Tests
 ```bash
-# Install testing dependencies
 pip install -r requirements-dev.txt
-
-# Run all tests
-pytest tests/
-
-# Run with coverage report
-pytest tests/ --cov=calculator --cov=app --cov-report=html
-
-# Run specific test file
-pytest tests/test_calculator.py
-
-# Run specific test class
-pytest tests/test_calculator.py::TestNormalizeCityInput
-
-# Run with verbose output
-pytest tests/ -v
+pytest tests/ -q
 ```
 
-### Test Coverage
-The test suite includes:
-- **Unit tests** for all calculator functions (normalize, find, score, etc.)
-- **Edge cases**: empty strings, unicode, special characters, None values
-- **Integration tests** for Flask routes and API endpoints
-- **Mock data tests** to avoid dependency on real CSV files
+## Safety and implementation docs
 
-### Continuous Integration
-Tests run automatically on GitHub Actions for all pull requests.
-
-## Built By
-
-Jacob - Self-taught ML/RL engineer building resistance tech tools.
+- `FIELD_SHIELD_SAFETY.md` — practical hardening roadmap
+- `IMPLEMENTATION_CHECKLIST_FIELD_SHIELD.md` — v0.1 done vs v0.2 required
 
 ## License
 
-Public domain. Use this to protect people.
+Public domain.
