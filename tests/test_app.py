@@ -49,6 +49,15 @@ class TestIndexRoute:
         # (will fail if template doesn't exist, but that's OK for MVP)
 
 
+class TestFieldShieldRoute:
+    """Tests for Field Shield frontend route"""
+
+    def test_field_shield_page_loads(self, client):
+        response = client.get('/field-shield')
+        assert response.status_code == 200
+        assert b'Field Shield Mode' in response.data
+
+
 class TestCheckRiskRoute:
     """Tests for the /check POST route"""
     
@@ -63,8 +72,8 @@ class TestCheckRiskRoute:
                 'matched_cities': ['Portland, OR']
             }
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.post('/check', data={'city': 'Portland'})
         assert response.status_code == 200
@@ -88,8 +97,8 @@ class TestCheckRiskRoute:
                 'suggestions': ['Portland, OR', 'Phoenix, AZ']
             }
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.post('/check', data={'city': 'InvalidCity'})
         assert response.status_code == 200
@@ -107,8 +116,8 @@ class TestAPICheckPost:
                 'total_incidents': 20
             }
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.post('/api/check',
                               data=json.dumps({'city': 'Portland'}),
@@ -142,8 +151,8 @@ class TestAPICheckPost:
         def mock_get_risk(city, csv_path='protest_data_oversight.csv'):
             return {'risk_score': 50}
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.post('/api/check',
                               data=json.dumps({'city': 'Portland'}),
@@ -164,8 +173,8 @@ class TestAPICheckGet:
                 'search_term': city
             }
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.get('/api/check/Portland')
         assert response.status_code == 200
@@ -177,8 +186,8 @@ class TestAPICheckGet:
         def mock_get_risk(city, csv_path='protest_data_oversight.csv'):
             return {'risk_score': 30}
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.get('/api/check/Los%20Angeles')
         assert response.status_code == 200
@@ -188,8 +197,8 @@ class TestAPICheckGet:
         def mock_get_risk(city, csv_path='protest_data_oversight.csv'):
             return {'risk_score': 50}
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.get('/api/check/Portland')
         assert response.content_type == 'application/json'
@@ -213,8 +222,8 @@ class TestAPICities:
         def mock_get_all_cities(csv_path='protest_data_oversight.csv'):
             return ['Portland, OR', 'Phoenix, AZ', 'Los Angeles, CA']
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_all_cities', mock_get_all_cities)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_all_cities', mock_get_all_cities)
         
         response = client.get('/api/cities')
         assert response.status_code == 200
@@ -263,8 +272,8 @@ class TestAPILastUpdated:
                 'timestamp': '2026-01-01T12:00:00'
             }
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_last_updated', mock_get_last_updated)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_last_updated', mock_get_last_updated)
         
         response = client.get('/api/last_updated')
         assert response.status_code == 200
@@ -282,8 +291,8 @@ class TestAPILastUpdated:
                 'timestamp': None
             }
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_last_updated', mock_get_last_updated)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_last_updated', mock_get_last_updated)
         
         response = client.get('/api/last_updated')
         assert response.status_code == 200
@@ -302,8 +311,8 @@ class TestAPITimeline:
                 {'date': '2026-01-02', 'count': 3}
             ]
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_timeline_data', mock_get_timeline)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_timeline_data', mock_get_timeline)
         
         response = client.get('/api/timeline')
         assert response.status_code == 200
@@ -318,8 +327,8 @@ class TestAPITimeline:
                 return [{'date': '2026-01-01', 'count': 3}]
             return []
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_timeline_data', mock_get_timeline)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_timeline_data', mock_get_timeline)
         
         response = client.get('/api/timeline?city=Portland')
         assert response.status_code == 200
@@ -331,8 +340,8 @@ class TestAPITimeline:
         def mock_get_timeline(city=None, csv_path='protest_data_oversight.csv'):
             return []
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_timeline_data', mock_get_timeline)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_timeline_data', mock_get_timeline)
         
         response = client.get('/api/timeline')
         assert response.status_code == 200
@@ -348,8 +357,8 @@ class TestEdgeCases:
         def mock_get_risk(city, csv_path='protest_data_oversight.csv'):
             return {'risk_score': 50}
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.post('/api/check',
                               data=json.dumps({'city': 'São Paulo'}),
@@ -361,8 +370,8 @@ class TestEdgeCases:
         def mock_get_risk(city, csv_path='protest_data_oversight.csv'):
             return {'risk_score': 50}
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_risk_for_city', mock_get_risk)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_risk_for_city', mock_get_risk)
         
         response = client.get('/api/check/Portland%2C%20OR')
         assert response.status_code == 200
@@ -380,8 +389,8 @@ class TestEdgeCases:
         def mock_get_timeline(city=None, csv_path='protest_data_oversight.csv'):
             return []
         
-        import calculator
-        monkeypatch.setattr(calculator, 'get_timeline_data', mock_get_timeline)
+        import app as app_module
+        monkeypatch.setattr(app_module, 'get_timeline_data', mock_get_timeline)
         
         response = client.get('/api/timeline?city=NonexistentCity')
         assert response.status_code == 200

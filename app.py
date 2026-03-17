@@ -4,6 +4,14 @@ import json
 from urllib.request import urlopen
 from urllib.error import URLError
 from flask import Flask, Response, render_template, request, jsonify, redirect
+from field_shield import (
+    ValidationError,
+    add_checkin,
+    add_incident,
+    generate_packet,
+    send_alert,
+    start_session,
+)
 from calculator import (
     get_risk_for_city,
     get_all_cities,
@@ -24,6 +32,42 @@ from calculator import (
 import pandas as pd
 
 app = Flask(__name__)
+
+
+def _env_flag(name: str, default: str = 'false') -> bool:
+    return os.environ.get(name, default).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def field_shield_config() -> dict:
+    enabled = _env_flag('FIELD_SHIELD_ENABLED', 'false')
+    return {
+        'enabled': enabled,
+        'mode': os.environ.get('FIELD_SHIELD_MODE', 'balanced').strip().lower() or 'balanced',
+        'redact_user_input': _env_flag('FIELD_SHIELD_REDACT_USER_INPUT', 'true'),
+        'no_store_headers': _env_flag('FIELD_SHIELD_NO_STORE_HEADERS', 'true'),
+    }
+
+
+def apply_field_shield_payload(risk_data: dict, city_input: str, resolved_city: str) -> dict:
+    """Attach/sanitize API fields when Field Shield is enabled."""
+    if not isinstance(risk_data, dict):
+        return risk_data
+
+    cfg = field_shield_config()
+    if cfg['enabled'] and cfg['redact_user_input']:
+        risk_data.pop('query_input', None)
+        risk_data.pop('resolved_location', None)
+        risk_data.pop('search_term', None)
+    else:
+        risk_data['query_input'] = city_input
+        risk_data['resolved_location'] = resolved_city
+
+    risk_data['field_shield'] = {
+        'enabled': cfg['enabled'],
+        'mode': cfg['mode'],
+        'redacted_user_input': bool(cfg['enabled'] and cfg['redact_user_input'])
+    }
+    return risk_data
 
 
 def resolve_location_input(raw_input: str) -> str:
@@ -99,6 +143,10 @@ def methodology():
 def safety_privacy():
     return render_template('safety_privacy.html')
 
+@app.route('/field-shield')
+def field_shield():
+    return render_template('field_shield.html')
+
 @app.route('/check', methods=['POST'])
 def check_risk():
     city_input = request.form.get('city', '').strip()
@@ -119,7 +167,7 @@ def check_risk():
 @app.route('/api/check', methods=['POST'])
 def api_check_post():
     """API endpoint for programmatic access (POST with JSON)"""
-    data = request.get_json()
+    data = request.get_json() or {}
     city = data.get('city', '').strip()
 
     if not city:
@@ -127,20 +175,25 @@ def api_check_post():
 
     resolved_city = resolve_location_input(city)
     risk_data = get_risk_for_city(resolved_city)
-    if isinstance(risk_data, dict):
-        risk_data['query_input'] = city
-        risk_data['resolved_location'] = resolved_city
-    return jsonify(risk_data)
+    return jsonify(apply_field_shield_payload(risk_data, city, resolved_city))
 
 @app.route('/api/check/<city>')
 def api_check_get(city):
     """API endpoint for programmatic access (GET with URL param)"""
     resolved_city = resolve_location_input(city)
     risk_data = get_risk_for_city(resolved_city)
-    if isinstance(risk_data, dict):
-        risk_data['query_input'] = city
-        risk_data['resolved_location'] = resolved_city
-    return jsonify(risk_data)
+    return jsonify(apply_field_shield_payload(risk_data, city, resolved_city))
+
+
+@app.route('/api/field-shield/status')
+def api_field_shield_status():
+    cfg = field_shield_config()
+    return jsonify({
+        'enabled': cfg['enabled'],
+        'mode': cfg['mode'],
+        'redact_user_input': cfg['redact_user_input'],
+        'no_store_headers': cfg['no_store_headers'],
+    })
 
 @app.route('/cities')
 def list_cities():
@@ -236,9 +289,83 @@ def api_death_tracker():
 def api_contractor_tracker():
     return jsonify(get_contractor_tracker_data())
 
+
+@app.route('/api/field-shield/start', methods=['POST'])
+def api_field_shield_start():
+    payload = request.get_json(silent=True) or {}
+    try:
+        session = start_session(payload)
+        return jsonify({
+            'session_id': session['session_id'],
+            'created_at': session['created_at'],
+            'status': session['status'],
+            'trusted_contacts_count': len(session.get('metadata', {}).get('trusted_contacts', [])),
+        }), 201
+    except ValidationError as exc:
+        return jsonify({'error': str(exc)}), 400
+
+
+@app.route('/api/field-shield/checkin', methods=['POST'])
+def api_field_shield_checkin():
+    payload = request.get_json(silent=True) or {}
+    try:
+        checkin = add_checkin(payload)
+        return jsonify({'ok': True, 'checkin': checkin}), 201
+    except ValidationError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({'error': 'session not found'}), 404
+
+
+@app.route('/api/field-shield/incident', methods=['POST'])
+def api_field_shield_incident():
+    payload = request.get_json(silent=True) or {}
+    try:
+        incident = add_incident(payload)
+        return jsonify({'ok': True, 'incident': incident}), 201
+    except ValidationError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({'error': 'session not found'}), 404
+
+
+@app.route('/api/field-shield/alert', methods=['POST'])
+def api_field_shield_alert():
+    payload = request.get_json(silent=True) or {}
+    try:
+        alert_record = send_alert(payload)
+        return jsonify({'ok': True, 'alert': alert_record}), 201
+    except ValidationError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({'error': 'session not found'}), 404
+
+
+@app.route('/api/field-shield/session/<session_id>/packet', methods=['GET'])
+def api_field_shield_packet(session_id):
+    try:
+        out = generate_packet(session_id)
+        return jsonify(out), 200
+    except ValidationError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({'error': 'session not found'}), 404
+
+
 @app.route('/health', methods=['GET'])
 def health():
     return {'ok': True}, 200
+
+
+@app.after_request
+def apply_security_headers(response):
+    cfg = field_shield_config()
+    if cfg['enabled'] and cfg['no_store_headers']:
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

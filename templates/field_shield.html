@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Field Shield Mode — Protest Safety Checker{% endblock %}
+
+{% block content %}
+<section class="hero field-shield-shell">
+  <div class="eyebrow">FIELD SHIELD MODE · MOBILE-FIRST</div>
+  <h1>One-tap field workflow for live protest safety operations</h1>
+  <p class="sub">Use this to coordinate check-ins, incident logs, and trusted-contact alerts. This tool does <strong>not</strong> replace legal advice, emergency response, or informed consent from the people you document.</p>
+
+  <div class="field-actions">
+    <button id="startSessionBtn" class="btn" type="button">Start Session</button>
+    <button id="quickCheckinBtn" class="btn secondary" type="button" disabled>Quick check-in</button>
+    <button id="panicLockBtn" class="btn secondary" type="button">Panic lock</button>
+  </div>
+
+  <p class="muted" id="sessionStatusText" style="margin-top:10px;">Session inactive. Start a session before logging field events.</p>
+  <p class="muted" id="offlineBanner" hidden>Offline mode detected: events are queued locally and will sync when connection returns.</p>
+</section>
+
+<section class="grid cols-2" style="margin-top:12px;">
+  <div class="card">
+    <h2>Incident report</h2>
+    <p class="muted">Only log information you have consent or legal basis to capture. Avoid names unless strictly necessary for legal support.</p>
+    <form id="incidentForm" class="field-form">
+      <label>Agents observed
+        <input type="number" name="agentsCount" min="0" value="0" required />
+      </label>
+      <label>Vehicles observed
+        <input type="number" name="vehiclesCount" min="0" value="0" required />
+      </label>
+      <label>Force level
+        <select name="forceLevel" required>
+          <option value="none">None observed</option>
+          <option value="presence">Show of force</option>
+          <option value="physical">Physical force</option>
+          <option value="less-lethal">Less-lethal weapons</option>
+          <option value="unknown">Unknown</option>
+        </select>
+      </label>
+      <label>Detainee / witness notes
+        <textarea name="notes" rows="4" placeholder="Keep it factual. No speculation."></textarea>
+      </label>
+      <button class="btn" type="submit">Submit incident</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Trusted contact alert</h2>
+    <p class="muted">Use agreed consent protocols. Sending alerts may expose sensitive movement context to recipients.</p>
+    <form id="contactAlertForm" class="field-form">
+      <label>Contact name or alias
+        <input type="text" name="contactName" required placeholder="Ex: Legal hotline desk" />
+      </label>
+      <label>Contact method
+        <input type="text" name="contactMethod" required placeholder="Signal / SMS / phone" />
+      </label>
+      <label>Alert message
+        <textarea name="message" rows="4" required placeholder="Short, actionable status update."></textarea>
+      </label>
+      <button class="btn" type="submit">Send alert</button>
+    </form>
+  </div>
+</section>
+
+<section class="card" style="margin-top:12px;">
+  <h2>Session timeline</h2>
+  <p class="muted">Recent field events for this device/session.</p>
+  <ul id="timelineList" class="timeline-list">
+    <li class="muted">No events yet. Start a session to begin tracking.</li>
+  </ul>
+</section>
+
+<section id="panicOverlay" class="panic-overlay" hidden>
+  <div class="panic-panel card">
+    <h2>Panic lock enabled</h2>
+    <p class="muted">Sensitive controls are hidden behind a neutral screen. This is a visual decoy only — it does not encrypt or erase data.</p>
+    <p class="muted">Unlock code is stored locally on this device for convenience, not for hardened security.</p>
+    <form id="unlockForm" class="field-form">
+      <label>Unlock code
+        <input id="unlockCodeInput" type="password" autocomplete="off" placeholder="Enter unlock code" required />
+      </label>
+      <button class="btn" type="submit">Unlock Field Shield</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/field_shield.js"></script>
+{% endblock %}

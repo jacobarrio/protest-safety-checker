@@ -94,7 +94,11 @@ h2 { margin: 0 0 8px; }
 .sub { color: var(--muted); margin: 0 0 16px; max-width: 760px; }
 
 .search-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; position: relative; margin-top: 10px; }
-input[type=text] {
+input[type=text],
+input[type=number],
+input[type=password],
+select,
+textarea {
   width: 100%;
   border-radius: 11px;
   border: 1px solid var(--border);
@@ -102,8 +106,13 @@ input[type=text] {
   color: var(--text);
   padding: 12px;
   font-size: 15px;
+  font-family: inherit;
 }
-input[type=text]:focus { outline: 2px solid rgba(33, 212, 162, 0.22); outline-offset: 1px; }
+input[type=text]:focus,
+input[type=number]:focus,
+input[type=password]:focus,
+select:focus,
+textarea:focus { outline: 2px solid rgba(33, 212, 162, 0.22); outline-offset: 1px; }
 
 .btn {
   border: 1px solid var(--accent-dark);
@@ -312,6 +321,59 @@ input[type=text]:focus { outline: 2px solid rgba(33, 212, 162, 0.22); outline-of
 }
 .method-detail[open] summary {
   margin-bottom: 8px;
+}
+
+.field-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.field-form {
+  display: grid;
+  gap: 10px;
+}
+
+.field-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.timeline-list li {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  background: #0b1219;
+}
+
+.timeline-list .event-type {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--accent-2);
+}
+
+.panic-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(2, 6, 10, 0.94);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.panic-panel {
+  width: min(560px, 100%);
 }
 
 @media (max-width: 780px) {
