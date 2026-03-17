@@ -85,6 +85,23 @@ Operational guidance for users:
 - Use coarse locations whenever possible
 - Assume compromised-device risk and plan fallback channels
 
+## Field Shield docs map
+
+- `app.py` — API/UI integration points and Field Shield route wiring
+- `templates/field_shield.html` — Field Shield UI surface
+- `static/field_shield.js` — client workflow logic (session/checkins/incidents/alerts)
+- `tests/test_field_shield.py` — Field Shield route and behavior tests
+- `FIELD_SHIELD_SAFETY.md` — hardening guidance (encryption, keys, access, legal)
+- `IMPLEMENTATION_CHECKLIST_FIELD_SHIELD.md` — v0.1 shipped now vs v0.2 requirements
+- `FIELD_SHIELD_PROGRESS.md` — current delivery status + risks
+
+## Progressive disclosure + context hygiene
+
+Field Shield integration follows two guardrails:
+
+- **Progressive disclosure:** default UI shows only essential actions first; details/escalations are layered to reduce cognitive overload in-field.
+- **Context hygiene:** minimize sensitive payload exposure (optional query redaction, no-store headers, avoid storing PII, avoid body logging on sensitive endpoints).
+
 ## Testing
 
 ```bash
@@ -96,6 +113,7 @@ pytest tests/ -q
 
 - `FIELD_SHIELD_SAFETY.md` — practical hardening roadmap
 - `IMPLEMENTATION_CHECKLIST_FIELD_SHIELD.md` — v0.1 done vs v0.2 required
+- `FIELD_SHIELD_PROGRESS.md` — done / in-progress / todo / risks
 
 ## License
 
