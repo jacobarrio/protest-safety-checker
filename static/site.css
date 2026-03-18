@@ -376,6 +376,10 @@ textarea:focus { outline: 2px solid rgba(33, 212, 162, 0.22); outline-offset: 1p
   width: min(560px, 100%);
 }
 
+.panic-overlay[hidden] {
+  display: none !important;
+}
+
 @media (max-width: 780px) {
   .search-row { grid-template-columns: 1fr; }
   #autocomplete { right: 0; top: 98px; }
