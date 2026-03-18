@@ -33,16 +33,43 @@ function safeParse(value, fallback) {
   }
 }
 
+function storageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (_) {
+    return null;
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function loadState() {
-  state.session = safeParse(localStorage.getItem(STORAGE_KEYS.session), null);
-  state.timeline = safeParse(localStorage.getItem(STORAGE_KEYS.timeline), []);
-  state.queue = safeParse(localStorage.getItem(STORAGE_KEYS.queue), []);
+  state.session = safeParse(storageGet(STORAGE_KEYS.session), null);
+  state.timeline = safeParse(storageGet(STORAGE_KEYS.timeline), []);
+  state.queue = safeParse(storageGet(STORAGE_KEYS.queue), []);
 }
 
 function persistState() {
-  localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(state.session));
-  localStorage.setItem(STORAGE_KEYS.timeline, JSON.stringify(state.timeline.slice(0, 100)));
-  localStorage.setItem(STORAGE_KEYS.queue, JSON.stringify(state.queue.slice(0, 50)));
+  const okSession = storageSet(STORAGE_KEYS.session, JSON.stringify(state.session));
+  const okTimeline = storageSet(STORAGE_KEYS.timeline, JSON.stringify(state.timeline.slice(0, 100)));
+  const okQueue = storageSet(STORAGE_KEYS.queue, JSON.stringify(state.queue.slice(0, 50)));
+
+  if (!okSession || !okTimeline || !okQueue) {
+    // Storage can fail in strict/private browsing contexts. App should still function in-memory.
+    addTimelineEventNoPersist('system', 'Local storage unavailable; running in in-memory mode for this tab.');
+  }
+}
+
+function addTimelineEventNoPersist(type, message, details = {}) {
+  state.timeline.unshift({ id: genId(), type, message, details, createdAt: nowIso() });
+  renderTimeline();
 }
 
 function addTimelineEvent(type, message, details = {}) {
@@ -208,17 +235,17 @@ async function submitIncident(form) {
 
   if (!navigator.onLine) {
     queueEvent('incident', payload);
-    addTimelineEvent('incident', `Incident queued offline (${payload.forceLevel}).`);
+    addTimelineEvent('incident', `Incident queued offline (${forceLevel}).`);
     form.reset();
     return;
   }
 
   try {
     await postJson('/api/field-shield/incident', payload);
-    addTimelineEvent('incident', `Incident sent (${payload.forceLevel}).`);
+    addTimelineEvent('incident', `Incident sent (${forceLevel}).`);
   } catch (_) {
     queueEvent('incident', payload);
-    addTimelineEvent('incident', `Incident queued after sync error (${payload.forceLevel}).`);
+    addTimelineEvent('incident', `Incident queued after sync error (${forceLevel}).`);
   }
 
   form.reset();
@@ -256,11 +283,15 @@ async function submitTrustedAlert(form) {
 }
 
 function enablePanicLock() {
-  const existing = localStorage.getItem(STORAGE_KEYS.lockCode);
+  const existing = storageGet(STORAGE_KEYS.lockCode);
   if (!existing) {
     const candidate = prompt('Set a short unlock code for this device (visual lock only):');
     if (!candidate) return;
-    localStorage.setItem(STORAGE_KEYS.lockCode, candidate);
+    const saved = storageSet(STORAGE_KEYS.lockCode, candidate);
+    if (!saved) {
+      addTimelineEventNoPersist('system', 'Could not persist unlock code in this browser mode.');
+      return;
+    }
   }
 
   state.panicLocked = true;
@@ -268,7 +299,7 @@ function enablePanicLock() {
 }
 
 function tryUnlock(code) {
-  const savedCode = localStorage.getItem(STORAGE_KEYS.lockCode);
+  const savedCode = storageGet(STORAGE_KEYS.lockCode);
   if (!savedCode || code === savedCode) {
     state.panicLocked = false;
     document.getElementById('panicOverlay')?.setAttribute('hidden', 'hidden');
