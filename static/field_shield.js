@@ -112,7 +112,7 @@ async function flushQueue() {
       if (item.kind === 'checkin') {
         await postJson('/api/field-shield/checkin', item.payload);
       } else if (item.kind === 'incident') {
-        await postJson('/api/field-shield/incidents', item.payload);
+        await postJson('/api/field-shield/incident', item.payload);
       }
     } catch (_) {
       remaining.push(item);
@@ -131,13 +131,23 @@ async function flushQueue() {
 async function startSession() {
   if (state.panicLocked) return;
 
-  const payload = { startedAt: nowIso(), source: 'web' };
-  state.session = { id: crypto.randomUUID(), startedAt: payload.startedAt };
+  const payload = {
+    organizer_alias: 'field-user',
+    consent_ack: true,
+    location: '',
+    trusted_contacts: [],
+  };
 
   try {
-    await postJson('/api/field-shield/session/start', payload);
+    const res = await postJson('/api/field-shield/start', payload);
+    state.session = {
+      id: res.session_id || crypto.randomUUID(),
+      startedAt: res.created_at || nowIso(),
+      serverSynced: true,
+    };
     addTimelineEvent('session', 'Session started and synced.');
   } catch (_) {
+    state.session = { id: crypto.randomUUID(), startedAt: nowIso(), serverSynced: false };
     addTimelineEvent('session', 'Session started locally (server unavailable).');
   }
 
@@ -149,7 +159,7 @@ async function quickCheckin() {
   if (!state.session || state.panicLocked) return;
 
   const payload = {
-    sessionId: state.session.id,
+    session_id: state.session.id,
     timestamp: nowIso(),
     status: 'ok',
   };
@@ -173,13 +183,18 @@ async function submitIncident(form) {
   if (!state.session || state.panicLocked) return;
 
   const formData = new FormData(form);
+  const agentsCount = Number(formData.get('agentsCount') || 0);
+  const vehiclesCount = Number(formData.get('vehiclesCount') || 0);
+  const forceLevel = String(formData.get('forceLevel') || 'unknown');
+  const notes = String(formData.get('notes') || '').trim();
+
   const payload = {
-    sessionId: state.session.id,
+    session_id: state.session.id,
     timestamp: nowIso(),
-    agentsCount: Number(formData.get('agentsCount') || 0),
-    vehiclesCount: Number(formData.get('vehiclesCount') || 0),
-    forceLevel: String(formData.get('forceLevel') || 'unknown'),
-    notes: String(formData.get('notes') || '').trim(),
+    incident_type: forceLevel === 'physical' || forceLevel === 'less-lethal' ? 'assault' : 'other',
+    severity: forceLevel === 'less-lethal' ? 5 : (forceLevel === 'physical' ? 4 : (forceLevel === 'presence' ? 2 : 3)),
+    description: `Agents observed: ${agentsCount}; Vehicles observed: ${vehiclesCount}; Force level: ${forceLevel}. Notes: ${notes || 'none'}`,
+    location: '',
   };
 
   if (!navigator.onLine) {
@@ -190,7 +205,7 @@ async function submitIncident(form) {
   }
 
   try {
-    await postJson('/api/field-shield/incidents', payload);
+    await postJson('/api/field-shield/incident', payload);
     addTimelineEvent('incident', `Incident sent (${payload.forceLevel}).`);
   } catch (_) {
     queueEvent('incident', payload);
@@ -204,17 +219,27 @@ async function submitTrustedAlert(form) {
   if (!state.session || state.panicLocked) return;
 
   const formData = new FormData(form);
+  const contactName = String(formData.get('contactName') || '').trim();
+  const contactMethod = String(formData.get('contactMethod') || '').trim().toLowerCase();
+  const message = String(formData.get('message') || '').trim();
+
+  const providers = [];
+  if (contactMethod.includes('signal')) providers.push('signal');
+  if (contactMethod.includes('sms') || contactMethod.includes('text')) providers.push('sms');
+  if (!providers.length) providers.push('sms');
+
   const payload = {
-    sessionId: state.session.id,
+    session_id: state.session.id,
     timestamp: nowIso(),
-    contactName: String(formData.get('contactName') || '').trim(),
-    contactMethod: String(formData.get('contactMethod') || '').trim(),
-    message: String(formData.get('message') || '').trim(),
+    alert_type: 'distress',
+    message,
+    providers,
+    recipients: [contactName],
   };
 
   try {
-    await postJson('/api/field-shield/trusted-alert', payload);
-    addTimelineEvent('alert', `Trusted alert sent to ${payload.contactName || 'contact'}.`);
+    await postJson('/api/field-shield/alert', payload);
+    addTimelineEvent('alert', `Trusted alert sent to ${contactName || 'contact'}.`);
     form.reset();
   } catch (_) {
     addTimelineEvent('alert', 'Trusted alert could not be sent (server unavailable).');

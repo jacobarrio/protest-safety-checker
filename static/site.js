@@ -251,8 +251,11 @@ async function checkRisk() {
 
     const components = data.score_breakdown?.components || [];
     document.getElementById('riskBreakdown').innerHTML = components.map(c => {
-      const score = typeof c.capped_score !== 'undefined' ? c.capped_score : c.raw_score;
-      return `<li>${c.name}: ${c.count} × ${c.weight} = ${score}</li>`;
+      const hasCap = typeof c.cap !== 'undefined' && typeof c.capped_score !== 'undefined';
+      if (hasCap) {
+        return `<li>${c.name}: ${c.count} × ${c.weight} = ${c.raw_score} → capped at ${c.capped_score} (max ${c.cap})</li>`;
+      }
+      return `<li>${c.name}: ${c.count} × ${c.weight} = ${c.raw_score}</li>`;
     }).join('');
 
     const plan = buildPlan(data, currentRole);
