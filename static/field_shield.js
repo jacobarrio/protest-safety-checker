@@ -16,6 +16,15 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function genId() {
+  try {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+  } catch (_) {}
+  return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function safeParse(value, fallback) {
   try {
     return JSON.parse(value);
@@ -37,7 +46,7 @@ function persistState() {
 }
 
 function addTimelineEvent(type, message, details = {}) {
-  state.timeline.unshift({ id: crypto.randomUUID(), type, message, details, createdAt: nowIso() });
+  state.timeline.unshift({ id: genId(), type, message, details, createdAt: nowIso() });
   persistState();
   renderTimeline();
 }
@@ -99,7 +108,7 @@ async function postJson(url, payload) {
 }
 
 function queueEvent(kind, payload) {
-  state.queue.push({ id: crypto.randomUUID(), kind, payload, queuedAt: nowIso() });
+  state.queue.push({ id: genId(), kind, payload, queuedAt: nowIso() });
   persistState();
 }
 
@@ -141,13 +150,13 @@ async function startSession() {
   try {
     const res = await postJson('/api/field-shield/start', payload);
     state.session = {
-      id: res.session_id || crypto.randomUUID(),
+      id: res.session_id || genId(),
       startedAt: res.created_at || nowIso(),
       serverSynced: true,
     };
     addTimelineEvent('session', 'Session started and synced.');
   } catch (_) {
-    state.session = { id: crypto.randomUUID(), startedAt: nowIso(), serverSynced: false };
+    state.session = { id: genId(), startedAt: nowIso(), serverSynced: false };
     addTimelineEvent('session', 'Session started locally (server unavailable).');
   }
 
@@ -314,7 +323,7 @@ async function loadServerTimeline() {
         if (seen.has(key)) continue;
         seen.add(key);
         deduped.push({
-          id: item.id || crypto.randomUUID(),
+          id: item.id || genId(),
           type: item.type || 'event',
           message: item.message || 'Field event logged.',
           createdAt: item.createdAt || item.timestamp || nowIso(),
