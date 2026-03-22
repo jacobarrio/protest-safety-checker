@@ -265,12 +265,21 @@ def get_data_integrity_report(csv_path='protest_data_oversight.csv'):
         key_cols = [c for c in ['date', 'location', 'title', 'source_url'] if c in df.columns]
         duplicate_rows = int(df.duplicated(subset=key_cols).sum()) if key_cols else 0
 
-        stale_threshold_days = 21
-        status = 'fresh' if (days_since_latest is not None and days_since_latest <= stale_threshold_days) else 'stale'
+        fresh_threshold_days = 14
+        stale_threshold_days = 30
+        if days_since_latest is None:
+            status = 'unknown'
+        elif days_since_latest <= fresh_threshold_days:
+            status = 'fresh'
+        elif days_since_latest <= stale_threshold_days:
+            status = 'aging'
+        else:
+            status = 'stale'
 
         return {
             'status': status,
             'verified_on': datetime.utcnow().strftime('%Y-%m-%d'),
+            'fresh_threshold_days': fresh_threshold_days,
             'stale_threshold_days': stale_threshold_days,
             'days_since_latest': days_since_latest,
             'latest_incident_date': latest.strftime('%Y-%m-%d') if pd.notna(latest) else None,

@@ -24,7 +24,12 @@ async function loadMeta() {
     const verifiedEl = document.getElementById('integrityVerified');
     const noteEl = document.getElementById('integrityNote');
 
-    if (statusEl) statusEl.textContent = (integrity.status || 'unknown').toUpperCase();
+    if (statusEl) {
+      const status = (integrity.status || 'unknown').toLowerCase();
+      statusEl.textContent = status.toUpperCase();
+      statusEl.classList.remove('status-fresh', 'status-aging', 'status-stale', 'status-unknown');
+      statusEl.classList.add(`status-${status}`);
+    }
     if (latestEl) latestEl.textContent = integrity.latest_incident_date || 'Unknown';
     if (verifiedEl) verifiedEl.textContent = integrity.verified_on || 'Unknown';
 
@@ -34,6 +39,8 @@ async function loadMeta() {
       const dupes = integrity.duplicate_rows;
       if (integrity.status === 'stale') {
         noteEl.textContent = `Dataset is stale (${staleDays} days since latest incident in dataset). Source URL coverage: ${coverage}% · duplicate rows: ${dupes}.`;
+      } else if (integrity.status === 'aging') {
+        noteEl.textContent = `Dataset is aging (${staleDays} days since latest incident). Source URL coverage: ${coverage}% · duplicate rows: ${dupes}.`;
       } else if (integrity.status === 'fresh') {
         noteEl.textContent = `Dataset is fresh (${staleDays} days since latest incident). Source URL coverage: ${coverage}% · duplicate rows: ${dupes}.`;
       } else {
