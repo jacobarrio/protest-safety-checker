@@ -1,118 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ICE Risk Tracker — Detention Facilities</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Archivo:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin:0; padding:0; }
-    body { font-family: Inter, system-ui, sans-serif; background:linear-gradient(180deg,#edf3ff 0%, #e3ebfb 55%, #d8e3f8 100%); color:#11254d; }
-    .wrap { max-width:1120px; margin:0 auto; padding:28px 18px 48px; }
-    .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:16px; }
-    .title { font-family:Manrope,"Plus Jakarta Sans",sans-serif; font-size:2.05rem; font-weight:800; letter-spacing:-0.02em; }
-    .sub { color:#5f7299; margin-top:6px; }
-    a { color:#93c5fd; text-decoration:none; }
-    a:hover { text-decoration:underline; }
-    .card { background:#111827; border:1px solid #1f2937; border-radius:16px; padding:16px; margin-bottom:14px; }
-    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-    .stat { background:#0f172a; border:1px solid #263245; border-radius:12px; padding:14px; }
-    .stat .k { color:#5f7299; font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; }
-    .stat .v { margin-top:6px; font-size:1.6rem; font-weight:800; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #1f2937; }
-    th { color:#93c5fd; font-size:.82rem; text-transform:uppercase; letter-spacing:.05em; }
-    .incident { border-left:3px solid #3b82f6; background:#0f172a; padding:10px 12px; border-radius:6px; margin-bottom:10px; }
-    .incident .d { color:#5f7299; font-size:.8rem; }
-    .incident .t { margin-top:4px; font-weight:600; }
-    .incident .meta { margin-top:6px; color:#cbd5e1; font-size:.84rem; }
-    .note { color:#5f7299; line-height:1.5; }
-    .site-footer{margin-top:16px;background:#f1f5ff;border:1px solid #d0dcf2;border-radius:14px;padding:14px}
-    .footer-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
-    .source-logos{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .source-logo{display:flex;align-items:center;gap:8px;border:1px solid #cad6ef;background:#f4f7ff;color:#244a92;padding:6px 9px;border-radius:12px}
-    .source-logo img{width:24px;height:24px;object-fit:contain;border-radius:3px}
-    .source-logo span{font-size:.78rem;font-weight:700}
-    .github-link{color:#93c5fd;text-decoration:none;font-weight:600}
+{% extends 'base.html' %}
+{% block title %}Detention Facilities — ICE Risk Tracker{% endblock %}
 
-    @media (max-width: 860px){ .grid{grid-template-columns:1fr;} }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div class="title">ICE Risk Tracker — Detention Facilities</div>
-        <div class="sub">Protest Safety Checker transparency view for detention/custody-related incident reporting.</div>
-      </div>
-      <div><a style="color:#dbeafe" href="/intel">Intel dashboard</a> · <a style="color:#dbeafe" href="/">Back to risk checker</a></div>
-    </div>
-
-    <div class="card grid">
-      <div class="stat"><div class="k">Detention-related records</div><div class="v">{{ data.total_detention_related }}</div></div>
-      <div class="stat"><div class="k">All records in dataset</div><div class="v">{{ summary.total_records or 'N/A' }}</div></div>
-      <div class="stat"><div class="k">Last updated</div><div class="v" style="font-size:1.1rem">{{ last_updated.time_str or 'Unknown' }}</div></div>
-    </div>
-
-    <div class="card">
-      <div class="note">
-        <strong>Method note:</strong> this page identifies possible detention-facility/custody signals using keyword matching in incident category/title
-        (e.g., detention, detained, facility, custody, jail, holding). It is a transparency aid, not a definitive facility registry.
-      </div>
-    </div>
-
-    <div class="card">
-      <h3 style="margin-bottom:10px;">Top locations by detention-related incident count</h3>
-      <table>
-        <thead>
-          <tr><th>Location</th><th>Incident count</th></tr>
-        </thead>
-        <tbody>
-          {% for row in data.locations %}
-          <tr>
-            <td>{{ row.location }}</td>
-            <td>{{ row.incident_count }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h3 style="margin-bottom:10px;">Recent detention/custody-related incidents</h3>
-      {% for incident in data.incidents[:40] %}
-      <div class="incident">
-        <div class="d">{{ incident.date or 'Unknown date' }} — {{ incident.location or 'Unknown location' }}</div>
-        <div class="t">{{ incident.title or 'No title available' }}</div>
-        <div class="meta">{{ incident.category or '' }}</div>
-        {% if incident.source_url %}
-        <div class="meta"><a href="{{ incident.source_url }}" target="_blank" rel="noopener">Source link</a></div>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-
-    <div class="site-footer">
-      <div class="footer-row">
-        <a class="github-link" href="https://github.com/jacobarrio/protest-safety-checker" target="_blank" rel="noopener">View project on GitHub ↗</a>
-        <div class="source-logos">
-          <div class="source-logo">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2d/Seal_of_the_United_States_House_of_Representatives.svg" alt="U.S. House">
-            <span>House Oversight</span>
-          </div>
-          <div class="source-logo">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/Seal_of_the_United_States_Department_of_Homeland_Security.svg" alt="DHS">
-            <span>DHS / ICE</span>
-          </div>
-          <div class="source-logo">
-            <img src="https://github.githubassets.com/favicons/favicon.svg" alt="GitHub">
-            <span>Source-linked Reporting</span>
-          </div>
-        </div>
-      </div>
-    </div>
+{% block content %}
+<nav class="nav">
+  <a href="/" class="brand">ICE RISK TRACKER</a>
+  <div class="nav-links">
+    <a href="/methodology">Methodology</a>
+    <a href="/for-organizers">Organizers</a>
+    <a href="/for-researchers">Researchers</a>
+    <a href="/intel">Intel</a>
+    <a href="/safety-privacy">Safety</a>
+    <a href="/field-shield">Field Shield</a>
   </div>
-</body>
-</html>
+</nav>
+
+<section class="hero" style="padding-bottom:24px;">
+  <div class="eyebrow">TRANSPARENCY VIEW</div>
+  <h1>Detention facilities</h1>
+  <p class="sub">Detention and custody-related incident patterns from public oversight data.</p>
+</section>
+
+<section class="grid cols-3" style="margin-top:8px;">
+  <div class="kpi"><div class="label">Detention records</div><div class="value">{{ data.total_detention_related }}</div></div>
+  <div class="kpi"><div class="label">Dataset records</div><div class="value">{{ summary.total_records or 'N/A' }}</div></div>
+  <div class="kpi"><div class="label">Last update</div><div class="value" style="font-size:16px;">{{ last_updated.time_str or 'Unknown' }}</div></div>
+</section>
+
+<section class="card" style="margin-top:16px;">
+  <div class="recommendation-item">
+    <strong>Method note:</strong> This page identifies possible detention-facility/custody signals using keyword matching in incident category/title (e.g. detention, detained, facility, custody, jail, holding). It is a transparency aid, not a definitive facility registry.
+  </div>
+</section>
+
+<section class="card" style="margin-top:16px;">
+  <h2>Top locations by detention incidents</h2>
+  <div class="score-table" style="margin-top:12px;">
+    <div class="score-row score-row-header"><div>Location</div><div style="grid-column:span 3;">Incidents</div></div>
+    {% for row in data.locations %}
+    <div class="score-row"><div>{{ row.location }}</div><div style="grid-column:span 3;">{{ row.incident_count }}</div></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card" style="margin-top:16px;">
+  <h2>Recent detention incidents</h2>
+  <div class="incident-list" style="margin-top:12px;">
+    {% for incident in data.incidents[:40] %}
+    <div class="incident-card">
+      <div class="incident-date">{{ incident.date or 'Unknown' }} — {{ incident.location or 'Unknown' }}</div>
+      <div class="incident-title">{{ incident.title or 'No title' }}</div>
+      {% if incident.category %}
+      <div class="incident-tags">{{ incident.category }}</div>
+      {% endif %}
+      {% if incident.source_url %}
+      <div class="incident-source"><a href="{{ incident.source_url }}" target="_blank" rel="noopener">Source →</a></div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-credits">
+    <p>Data: <a href="https://oversightdemocrats.house.gov/immigration-dashboard" target="_blank" rel="noopener">House Oversight Immigration Dashboard</a> · Community reports: <a href="https://pircoregon.org" target="_blank" rel="noopener">PIRC Oregon</a></p>
+    <p style="margin-top:6px;"><a href="https://github.com/jacobarrio/protest-safety-checker" target="_blank" rel="noopener">GitHub</a> · Built to protect organizers and communities</p>
+  </div>
+</footer>
+{% endblock %}

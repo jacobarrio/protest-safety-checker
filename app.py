@@ -119,10 +119,12 @@ def sitemap_xml():
     xml = (
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
-        "<url><loc>https://protest-safety-checker-production.up.railway.app/</loc></url>"
-        "<url><loc>https://protest-safety-checker-production.up.railway.app/detention-facilities</loc></url>"
-        "<url><loc>https://protest-safety-checker-production.up.railway.app/intel</loc></url>"
-        "<url><loc>https://protest-safety-checker-production.up.railway.app/health</loc></url>"
+        "<url><loc>https://protest-safety-checker.onrender.com/</loc></url>"
+        "<url><loc>https://protest-safety-checker.onrender.com/detention-facilities</loc></url>"
+        "<url><loc>https://protest-safety-checker.onrender.com/intel</loc></url>"
+        "<url><loc>https://protest-safety-checker.onrender.com/methodology</loc></url>"
+        "<url><loc>https://protest-safety-checker.onrender.com/for-organizers</loc></url>"
+        "<url><loc>https://protest-safety-checker.onrender.com/for-researchers</loc></url>"
         "</urlset>"
     )
     return Response(xml, mimetype='application/xml')
