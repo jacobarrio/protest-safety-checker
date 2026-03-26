@@ -217,7 +217,12 @@ async function checkRisk() {
   const city = cityInput.value.trim();
   if (!city) return;
 
+  // Add loading state
   output.classList.remove('show');
+  document.getElementById('riskLevel').innerHTML = '<div class="loading-spinner"></div>';
+  document.getElementById('riskScore').textContent = 'Analyzing...';
+  output.classList.add('show');
+
   try {
     const res = await fetch('/api/check', {
       method: 'POST',
@@ -267,6 +272,10 @@ async function checkRisk() {
 
     const plan = buildPlan(data, currentRole);
     renderPlan(plan);
+
+    // Auto-expand plan box when results load
+    const planBox = document.getElementById('planBoxDetails');
+    if (planBox) planBox.open = true;
 
     output.classList.add('show');
   } catch (e) {

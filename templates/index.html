@@ -1,46 +1,48 @@
 {% extends 'base.html' %}
-{% block title %}ICE Risk Tracker — Fast Risk Check{% endblock %}
+{% block title %}ICE Risk Tracker - Fast Risk Check{% endblock %}
 
 {% block content %}
+<nav class="nav">
+  <a href="/" class="brand">ICE RISK TRACKER</a>
+  <div class="nav-links">
+    <a href="/methodology">Methodology</a>
+    <a href="/for-organizers">For Organizers</a>
+    <a href="/for-researchers">For Researchers</a>
+    <a href="/intel">Intel</a>
+    <a href="/safety-privacy">Safety & Privacy</a>
+    <a href="/field-shield">Field Shield</a>
+  </div>
+</nav>
+
 <section class="hero">
   <div class="eyebrow">PUBLIC DATA · QUICK SAFETY SIGNAL</div>
   <h1>Get a fast read before you head out</h1>
   <p class="sub">Type a city or ZIP and get a quick risk signal. Then sanity-check it with local people and real-time updates.</p>
-  <div class="btn-group">
-    <button class="btn" onclick="checkRisk()">Run Risk Check</button>
-    <a class="btn secondary" href="/field-shield">Open Field Shield</a>
-    <a class="btn secondary" href="/methodology">How it works</a>
-  </div>
 
-  <div class="search-row" style="margin-top:14px;">
+  <div class="search-row" style="margin-top:20px;">
     <input id="cityInput" type="text" placeholder="Enter city or ZIP (example: Portland, OR or 97205)" autocomplete="off" />
     <button class="btn" onclick="checkRisk()">Analyze</button>
     <div id="autocomplete"></div>
   </div>
 
-  <div class="role-row">
-    <span class="muted">Mode:</span>
+  <div class="role-row" style="margin-top:16px;">
+    <span class="role-label">Your role:</span>
     <button class="role-chip active" data-role="organizer" type="button">Organizer</button>
     <button class="role-chip" data-role="legal" type="button">Legal Observer</button>
     <button class="role-chip" data-role="journalist" type="button">Journalist</button>
     <button class="role-chip" data-role="public" type="button">General Public</button>
   </div>
 
-  <div class="sample">
-    <div class="title">Use in 10 seconds</div>
-    <p class="muted" style="margin:0;">Check city → decide route, timing, and backup comms.</p>
-  </div>
-
   <div id="riskResult" class="card result">
-    <h2 id="riskLevel">—</h2>
+    <h2 id="riskLevel">-</h2>
     <p id="riskScore" class="muted">Risk score</p>
     <p id="riskResolved" class="muted"></p>
     <p id="riskConfidence" class="muted"></p>
 
     <div class="grid cols-3" style="margin-top:8px;">
-      <div class="kpi"><div class="label">Total incidents</div><div id="statTotal" class="value">—</div></div>
-      <div class="kpi"><div class="label">Use of force</div><div id="statForce" class="value">—</div></div>
-      <div class="kpi"><div class="label">Sensitive locations</div><div id="statSensitive" class="value">—</div></div>
+      <div class="kpi"><div class="label">Total incidents</div><div id="statTotal" class="value">-</div></div>
+      <div class="kpi"><div class="label">Use of force</div><div id="statForce" class="value">-</div></div>
+      <div class="kpi"><div class="label">Sensitive locations</div><div id="statSensitive" class="value">-</div></div>
     </div>
 
     <h3 style="margin-top:14px;margin-bottom:8px;">Top risk drivers</h3>
@@ -49,9 +51,9 @@
     <h3 style="margin-top:14px;margin-bottom:8px;">Score breakdown</h3>
     <ul id="riskBreakdown" class="list"></ul>
 
-    <section class="plan-box" style="margin-top:14px;">
-      <h3 style="margin-top:0;margin-bottom:8px;">30-minute action plan</h3>
-      <p id="planIntro" class="muted">Run a check to generate an actionable plan.</p>
+    <details class="plan-box" id="planBoxDetails" style="margin-top:14px;">
+      <summary style="cursor:pointer;font-weight:700;font-size:16px;margin-bottom:8px;">30-minute action plan</summary>
+      <p id="planIntro" class="muted" style="margin-top:10px;">Run a check to generate an actionable plan.</p>
       <div class="grid cols-2" style="margin-top:8px;">
         <div>
           <h4 style="margin:0 0 6px;">Do now</h4>
@@ -67,58 +69,27 @@
         <textarea id="planShare" class="plan-share" readonly></textarea>
         <button id="copyPlanBtn" class="btn secondary" type="button">Copy plan text</button>
       </div>
-    </section>
+    </details>
   </div>
 </section>
 
-<section class="grid cols-3">
-  <div class="kpi">
-    <div class="label">Incidents in dataset</div>
-    <div id="metaIncidents" class="value">—</div>
+<section class="quick-stats">
+  <div class="stat-item">
+    <span class="stat-number" id="metaIncidents">—</span>
+    <span class="stat-label">Incidents</span>
   </div>
-  <div class="kpi">
-    <div class="label">Locations covered</div>
-    <div id="metaCities" class="value">—</div>
+  <div class="stat-item">
+    <span class="stat-number" id="metaCities">—</span>
+    <span class="stat-label">Locations</span>
   </div>
-  <div class="kpi">
-    <div class="label">Last data update</div>
-    <div id="metaUpdated" class="value" style="font-size:16px">—</div>
+  <div class="stat-item">
+    <span class="stat-number" id="metaUpdated" style="font-size:14px;">—</span>
+    <span class="stat-label">Last Update</span>
   </div>
-</section>
-
-<section class="grid cols-3" style="margin-top:12px;">
-  <div class="kpi">
-    <div class="label">Sources</div>
-    <div class="muted" style="margin-top:8px;font-size:14px;">Clear source links + cross-reference path.</div>
-    <a href="/methodology" style="display:inline-block;margin-top:8px;">View source list →</a>
+  <div class="stat-item">
+    <span id="integrityStatus" class="stat-number" style="font-size:15px;">—</span>
+    <span class="stat-label">Data Status</span>
   </div>
-  <div class="kpi">
-    <div class="label">AI Use</div>
-    <div class="muted" style="margin-top:8px;font-size:14px;">Limited, non-critical support only. Scoring is rules/data-driven.</div>
-  </div>
-  <div class="kpi">
-    <div class="label">Privacy</div>
-    <div class="muted" style="margin-top:8px;font-size:14px;">Don’t enter names, IDs, or sensitive details.</div>
-  </div>
-</section>
-
-<section class="card" style="margin-top:12px;">
-  <h2>Data integrity + freshness</h2>
-  <div class="grid cols-3">
-    <div class="kpi">
-      <div class="label">Status</div>
-      <div id="integrityStatus" class="value">—</div>
-    </div>
-    <div class="kpi">
-      <div class="label">Latest incident in dataset</div>
-      <div id="integrityLatest" class="value" style="font-size:16px;">—</div>
-    </div>
-    <div class="kpi">
-      <div class="label">Last verification run</div>
-      <div id="integrityVerified" class="value" style="font-size:16px;">—</div>
-    </div>
-  </div>
-  <p id="integrityNote" class="muted" style="margin-top:10px;">Checking quality controls…</p>
 </section>
 
 <section class="card map-card" style="margin-top:12px;">
@@ -152,53 +123,72 @@
   </div>
 </section>
 
-<section class="card" style="margin-top:12px;">
-  <h2>What to do next after a risk check</h2>
-  <div class="grid cols-2">
-    <div>
-      <ul class="list">
-        <li>Adjust route, timing, and meetup points.</li>
-        <li>Assign legal observer + de-escalation roles.</li>
-        <li>Plan rapid comms fallback if conditions shift.</li>
-      </ul>
-    </div>
-    <div>
-      <ul class="list">
-        <li><a href="/for-organizers">Organizer playbook →</a></li>
-        <li><a href="/for-researchers">Research/data context →</a></li>
-        <li><a href="/safety-privacy">Safety + privacy practices →</a></li>
-      </ul>
+<details class="collapsible-section">
+  <summary>What to do next after a risk check</summary>
+  <div class="collapsible-content">
+    <div class="grid cols-2">
+      <div>
+        <h4 style="margin:0 0 8px;">Actions</h4>
+        <ul class="list">
+          <li>Adjust route, timing, and meetup points.</li>
+          <li>Assign legal observer + de-escalation roles.</li>
+          <li>Plan rapid comms fallback if conditions shift.</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px;">Resources</h4>
+        <ul class="list">
+          <li><a href="/for-organizers">Organizer playbook →</a></li>
+          <li><a href="/for-researchers">Research/data context →</a></li>
+          <li><a href="/safety-privacy">Safety + privacy practices →</a></li>
+        </ul>
+      </div>
     </div>
   </div>
-</section>
+</details>
 
-<section class="card" style="margin-top:12px;">
-  <h2>Report an incident (official channels)</h2>
-  <p class="sub">If you need to escalate abuse or rights violations, use these verified reporting routes.</p>
-  <div class="grid cols-3">
-    <div class="kpi">
-      <div class="label">Civil rights legal intake</div>
-      <ul class="list" style="margin-top:8px;">
-        <li><a href="https://www.aclu.org/affiliates" target="_blank" rel="noopener">ACLU affiliates</a></li>
-        <li><a href="https://civilrights.justice.gov/report/" target="_blank" rel="noopener">DOJ Civil Rights report form</a></li>
-      </ul>
-    </div>
-    <div class="kpi">
-      <div class="label">DHS misconduct complaints</div>
-      <ul class="list" style="margin-top:8px;">
-        <li><a href="https://www.dhs.gov/file-civil-rights-complaint" target="_blank" rel="noopener">DHS CRCL complaint form</a></li>
-        <li><a href="https://www.oig.dhs.gov/hotline" target="_blank" rel="noopener">DHS OIG hotline</a></li>
-      </ul>
-    </div>
-    <div class="kpi">
-      <div class="label">Detention oversight</div>
-      <ul class="list" style="margin-top:8px;">
-        <li><a href="https://www.dhs.gov/office-immigration-detention-ombudsman" target="_blank" rel="noopener">OIDO detention ombudsman</a></li>
-        <li><a href="/field-shield">Field Shield incident packet tools</a></li>
-      </ul>
+<details class="collapsible-section">
+  <summary>Report an incident (official channels)</summary>
+  <div class="collapsible-content">
+    <p class="sub" style="margin-bottom:12px;">If you need to escalate abuse or rights violations, use these verified reporting routes.</p>
+    <div class="grid cols-3">
+      <div>
+        <div class="label">Civil rights legal intake</div>
+        <ul class="list" style="margin-top:8px;">
+          <li><a href="https://www.aclu.org/affiliates" target="_blank" rel="noopener">ACLU affiliates</a></li>
+          <li><a href="https://civilrights.justice.gov/report/" target="_blank" rel="noopener">DOJ Civil Rights report form</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="label">DHS misconduct complaints</div>
+        <ul class="list" style="margin-top:8px;">
+          <li><a href="https://www.dhs.gov/file-civil-rights-complaint" target="_blank" rel="noopener">DHS CRCL complaint form</a></li>
+          <li><a href="https://www.oig.dhs.gov/hotline" target="_blank" rel="noopener">DHS OIG hotline</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="label">Detention oversight</div>
+        <ul class="list" style="margin-top:8px;">
+          <li><a href="https://www.dhs.gov/office-immigration-detention-ombudsman" target="_blank" rel="noopener">OIDO detention ombudsman</a></li>
+          <li><a href="/field-shield">Field Shield incident packet tools</a></li>
+        </ul>
+      </div>
     </div>
   </div>
-</section>
+</details>
+
+<footer class="site-footer">
+  <div class="footer-credits">
+    <p>
+      Data sources: <a href="https://oversightdemocrats.house.gov/immigration-dashboard" target="_blank" rel="noopener">House Oversight Democrats Immigration Dashboard</a> · 
+      Community data: <a href="https://pircoregon.org" target="_blank" rel="noopener">Portland Immigrant Rights Coalition (PIRC)</a> hotline reports
+    </p>
+    <p style="margin-top:8px;">
+      <a href="https://github.com/yourusername/protest-safety-checker" target="_blank" rel="noopener">View on GitHub</a> · 
+      Built to protect organizers and communities
+    </p>
+  </div>
+</footer>
 {% endblock %}
 
 {% block scripts %}
