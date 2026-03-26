@@ -1,45 +1,40 @@
 {% extends 'base.html' %}
-{% block title %}Risk Assessment — {{ data.resolved_location or data.query_input }}{% endblock %}
+{% block title %}{{ data.resolved_location or data.query_input }} — ICE Risk Tracker{% endblock %}
 
 {% block content %}
 <nav class="nav">
   <a href="/" class="brand">ICE RISK TRACKER</a>
   <div class="nav-links">
     <a href="/methodology">Methodology</a>
-    <a href="/for-organizers">For Organizers</a>
-    <a href="/for-researchers">For Researchers</a>
+    <a href="/for-organizers">Organizers</a>
+    <a href="/for-researchers">Researchers</a>
     <a href="/intel">Intel</a>
-    <a href="/safety-privacy">Safety & Privacy</a>
+    <a href="/safety-privacy">Safety</a>
     <a href="/field-shield">Field Shield</a>
   </div>
 </nav>
 
-<section class="hero">
-  <div class="eyebrow">RISK ASSESSMENT RESULT</div>
+<section class="hero" style="padding-bottom:24px;">
+  <div class="eyebrow">RISK ASSESSMENT</div>
   <h1>{{ data.resolved_location or data.query_input }}</h1>
-  <p class="sub">Risk assessment based on historical ICE enforcement data from the House Oversight Democrats Immigration Dashboard.</p>
 
-  <form method="POST" action="/check" style="margin-top:16px;">
+  <form method="POST" action="/check" style="margin-top:20px;">
     <div class="search-row">
-      <input type="text" name="city" placeholder="Search another location..." value="{{ data.search_term }}" />
-      <button type="submit" class="btn">Check Risk</button>
+      <input type="text" name="city" placeholder="Check another location…" value="{{ data.search_term }}" />
+      <button type="submit" class="btn">Check</button>
     </div>
   </form>
 
   {% if data.matched_cities and data.matched_cities|length > 1 %}
-  <div class="trust-strip" style="margin-top:12px;">
-    <div class="trust-item">
-      <strong>ℹ️ Combined data:</strong> Showing results for {{ data.matched_cities|join(', ') }}
-    </div>
-  </div>
+  <p class="muted" style="margin-top:12px;font-size:13px;">Combined data for: {{ data.matched_cities|join(', ') }}</p>
   {% endif %}
 </section>
 
-<section class="card risk-result-card" style="margin-top:16px;">
+<section class="card" style="margin-top:8px;">
   <div class="risk-header-row">
     <div>
-      <h2 style="margin:0;">Risk Level: {{ data.risk_level }}</h2>
-      <p class="muted" style="margin:4px 0 0;">Risk Score: {{ data.risk_score }}/100</p>
+      <h2 style="margin:0;font-size:24px;">{{ data.risk_level }} Risk</h2>
+      <p class="muted" style="margin:4px 0 0;">Score: {{ data.risk_score }} / 100</p>
     </div>
     <div class="risk-badge risk-badge-{{ data.risk_level|lower }}">
       {{ data.risk_level|upper }}
@@ -49,38 +44,35 @@
 
 <section class="grid cols-4" style="margin-top:16px;">
   <div class="kpi">
-    <div class="label">Total Incidents</div>
+    <div class="label">Incidents</div>
     <div class="value">{{ data.total_incidents }}</div>
   </div>
   <div class="kpi">
-    <div class="label">Use of Force</div>
+    <div class="label">Use of force</div>
     <div class="value">{{ data.use_of_force }}</div>
-    <div class="muted" style="margin-top:4px;font-size:13px;">{{ data.use_of_force_pct }}%</div>
+    <div class="muted" style="margin-top:2px;font-size:12px;">{{ data.use_of_force_pct }}%</div>
   </div>
   <div class="kpi">
     <div class="label">U.S. Citizens</div>
     <div class="value">{{ data.us_citizens }}</div>
-    <div class="muted" style="margin-top:4px;font-size:13px;">{{ data.us_citizens_pct }}%</div>
+    <div class="muted" style="margin-top:2px;font-size:12px;">{{ data.us_citizens_pct }}%</div>
   </div>
   <div class="kpi">
-    <div class="label">Sensitive Locations</div>
+    <div class="label">Sensitive loc.</div>
     <div class="value">{{ data.sensitive_locations }}</div>
-    <div class="muted" style="margin-top:4px;font-size:13px;">{{ data.sensitive_locations_pct }}%</div>
+    <div class="muted" style="margin-top:2px;font-size:12px;">{{ data.sensitive_locations_pct }}%</div>
   </div>
 </section>
 
 {% if data.score_breakdown and data.score_breakdown.components %}
 <section class="card" style="margin-top:16px;">
-  <h2>How this score was calculated</h2>
+  <h2>Score breakdown</h2>
   <div class="formula-display">
     <code>{{ data.score_breakdown.formula }}</code>
   </div>
   <div class="score-table">
     <div class="score-row score-row-header">
-      <div>Factor</div>
-      <div>Count</div>
-      <div>Weight</div>
-      <div>Score</div>
+      <div>Factor</div><div>Count</div><div>Weight</div><div>Score</div>
     </div>
     {% for component in data.score_breakdown.components %}
     <div class="score-row">
@@ -97,44 +89,44 @@
     </div>
     {% endfor %}
   </div>
-  <p class="muted" style="margin-top:12px;">
-    Pre-cap total: {{ data.score_breakdown.pre_cap_total }} → Final score: <strong style="color:var(--text);">{{ data.score_breakdown.final_score }}/100</strong>
+  <p class="muted" style="margin-top:12px;font-size:13px;">
+    Pre-cap: {{ data.score_breakdown.pre_cap_total }} → Final: <strong style="color:var(--text);">{{ data.score_breakdown.final_score }}/100</strong>
   </p>
 </section>
 {% endif %}
 
 <section class="card" style="margin-top:16px;">
-  <h2>Safety Recommendations</h2>
+  <h2>Recommendations</h2>
   {% if data.risk_level == 'High' %}
   <div class="recommendation-item">
-    <strong>⚠️ High Alert:</strong> Consider postponing non-urgent activities. If proceeding, ensure multiple legal observers are present.
+    <strong>⚠️ High Alert:</strong> Consider postponing non-urgent activities. Ensure multiple legal observers are present if proceeding.
   </div>
   <div class="recommendation-item">
-    <strong>📱 Communication:</strong> Use Signal for coordination. Designate a contact person outside the area.
+    <strong>📱 Comms:</strong> Use Signal for coordination. Designate a contact outside the area.
   </div>
   <div class="recommendation-item">
-    <strong>🆔 Documentation:</strong> Carry ID but know your rights. Do not consent to searches without a warrant.
+    <strong>🆔 Rights:</strong> Carry ID. Do not consent to searches without a warrant.
   </div>
   {% elif data.risk_level == 'Medium' %}
   <div class="recommendation-item">
-    <strong>⚡ Moderate Risk:</strong> Proceed with caution. Have a safety plan and know your rights.
+    <strong>⚡ Moderate:</strong> Proceed with caution. Have a safety plan and know your rights.
   </div>
   <div class="recommendation-item">
-    <strong>👥 Buddy System:</strong> Travel in groups when possible. Keep emergency contacts accessible.
+    <strong>👥 Buddy system:</strong> Travel in groups. Keep emergency contacts accessible.
   </div>
   {% else %}
   <div class="recommendation-item">
-    <strong>✓ Lower Risk:</strong> Standard precautions apply. Stay aware of your surroundings.
+    <strong>✓ Lower risk:</strong> Standard precautions apply. Stay aware of surroundings.
   </div>
   {% endif %}
   <div class="recommendation-item">
-    <strong>📞 Know Your Rights:</strong> You have the right to remain silent. Contact ACLU hotline: 1-877-218-2260
+    <strong>📞 ACLU Hotline:</strong> 1-877-218-2260 — You have the right to remain silent.
   </div>
 </section>
 
 {% if data.recent_incidents and data.recent_incidents|length > 0 %}
 <section class="card" style="margin-top:16px;">
-  <h2>Recent Incidents ({{ data.recent_incidents|length }})</h2>
+  <h2>Recent incidents</h2>
   <div class="incident-list">
     {% for incident in data.recent_incidents %}
     <div class="incident-card">
@@ -145,7 +137,7 @@
       {% endif %}
       {% if incident['source_url'] %}
       <div class="incident-source">
-        <a href="{{ incident['source_url'] }}" target="_blank" rel="noopener">📰 Read Source</a>
+        <a href="{{ incident['source_url'] }}" target="_blank" rel="noopener">Source →</a>
       </div>
       {% endif %}
     </div>
@@ -156,14 +148,8 @@
 
 <footer class="site-footer">
   <div class="footer-credits">
-    <p>
-      Data sources: <a href="https://oversightdemocrats.house.gov/immigration-dashboard" target="_blank" rel="noopener">House Oversight Democrats Immigration Dashboard</a> · 
-      Community data: <a href="https://pircoregon.org" target="_blank" rel="noopener">Portland Immigrant Rights Coalition (PIRC)</a> hotline reports
-    </p>
-    <p style="margin-top:8px;">
-      <a href="https://github.com/yourusername/protest-safety-checker" target="_blank" rel="noopener">View on GitHub</a> · 
-      Built to protect organizers and communities
-    </p>
+    <p>Data: <a href="https://oversightdemocrats.house.gov/immigration-dashboard" target="_blank" rel="noopener">House Oversight Immigration Dashboard</a> · Community reports: <a href="https://pircoregon.org" target="_blank" rel="noopener">PIRC Oregon</a></p>
+    <p style="margin-top:6px;"><a href="https://github.com/jacobarrio/protest-safety-checker" target="_blank" rel="noopener">GitHub</a> · Built to protect organizers and communities</p>
   </div>
 </footer>
 {% endblock %}

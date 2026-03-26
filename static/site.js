@@ -201,12 +201,12 @@ function setupCopyPlan() {
     try {
       await navigator.clipboard.writeText(box.value || '');
       btn.textContent = 'Copied';
-      setTimeout(() => { btn.textContent = 'Copy plan text'; }, 1000);
+      setTimeout(() => { btn.textContent = 'Copy plan'; }, 1000);
     } catch (_) {
       box.select();
       document.execCommand('copy');
       btn.textContent = 'Copied';
-      setTimeout(() => { btn.textContent = 'Copy plan text'; }, 1000);
+      setTimeout(() => { btn.textContent = 'Copy plan'; }, 1000);
     }
   });
 }
@@ -214,14 +214,12 @@ function setupCopyPlan() {
 async function checkRisk() {
   const cityInput = document.getElementById('cityInput');
   const output = document.getElementById('riskResult');
+  const loader = document.getElementById('loadingIndicator');
   const city = cityInput.value.trim();
   if (!city) return;
 
-  // Add loading state
   output.classList.remove('show');
-  document.getElementById('riskLevel').innerHTML = '<div class="loading-spinner"></div>';
-  document.getElementById('riskScore').textContent = 'Analyzing...';
-  output.classList.add('show');
+  if (loader) loader.classList.add('show');
 
   try {
     const res = await fetch('/api/check', {
@@ -230,6 +228,7 @@ async function checkRisk() {
       body: JSON.stringify({ city }),
     });
     const data = await res.json();
+    if (loader) loader.classList.remove('show');
     if (data.error) {
       document.getElementById('riskLevel').textContent = 'No result';
       document.getElementById('riskScore').textContent = data.error;
@@ -279,6 +278,7 @@ async function checkRisk() {
 
     output.classList.add('show');
   } catch (e) {
+    if (loader) loader.classList.remove('show');
     document.getElementById('riskLevel').textContent = 'Error';
     document.getElementById('riskScore').textContent = 'Could not fetch risk data.';
     document.getElementById('riskResolved').textContent = '';
@@ -433,13 +433,13 @@ async function drawMap() {
     z: values,
     text: mapStates.map(s => `${s.state}: ${isRecent ? (s.recent30 ?? 0) : (s.count ?? 0)} incidents`),
     colorscale: [
-      [0, '#11273a'],
-      [0.35, '#1d5c74'],
-      [0.7, '#20b98e'],
-      [1, '#7fffd4']
+      [0, '#1a1a2e'],
+      [0.35, '#2d2b55'],
+      [0.7, '#6366f1'],
+      [1, '#a5b4fc']
     ],
-    marker: { line: { color: '#0b1219', width: 0.8 } },
-    colorbar: { title: label, color: '#95a8be' },
+    marker: { line: { color: '#0c0c0e', width: 0.8 } },
+    colorbar: { title: label, color: '#8a8a95' },
     hovertemplate: '%{text}<extra></extra>'
   }], {
     geo: {
@@ -448,12 +448,12 @@ async function drawMap() {
       lakecolor: 'rgba(0,0,0,0)',
       showlakes: false,
       showcountries: false,
-      subunitcolor: '#223345'
+      subunitcolor: 'rgba(255,255,255,0.06)'
     },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
     margin: { t: 0, r: 0, b: 0, l: 0 },
-    font: { color: '#e7f0fb', family: 'Inter, sans-serif' }
+    font: { color: '#ececef', family: 'DM Sans, sans-serif' }
   }, { responsive: true, displayModeBar: false });
 
   if (summary) {
