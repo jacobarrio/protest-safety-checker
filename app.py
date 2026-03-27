@@ -119,12 +119,12 @@ def sitemap_xml():
     xml = (
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
-        "<url><loc>https://ice-risk-tracker.onrender.com/</loc></url>"
-        "<url><loc>https://ice-risk-tracker.onrender.com/detention-facilities</loc></url>"
-        "<url><loc>https://ice-risk-tracker.onrender.com/intel</loc></url>"
-        "<url><loc>https://ice-risk-tracker.onrender.com/methodology</loc></url>"
-        "<url><loc>https://ice-risk-tracker.onrender.com/for-organizers</loc></url>"
-        "<url><loc>https://ice-risk-tracker.onrender.com/for-researchers</loc></url>"
+        "<url><loc>https://ice-risk-tracker.up.railway.app/</loc></url>"
+        "<url><loc>https://ice-risk-tracker.up.railway.app/detention-facilities</loc></url>"
+        "<url><loc>https://ice-risk-tracker.up.railway.app/intel</loc></url>"
+        "<url><loc>https://ice-risk-tracker.up.railway.app/methodology</loc></url>"
+        "<url><loc>https://ice-risk-tracker.up.railway.app/for-organizers</loc></url>"
+        "<url><loc>https://ice-risk-tracker.up.railway.app/for-researchers</loc></url>"
         "</urlset>"
     )
     return Response(xml, mimetype='application/xml')
